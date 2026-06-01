@@ -67,11 +67,14 @@ h1, h2, h3, h4, h5, h6 {
 
 .navbar-brand {
     display: block;
-    background: url("logo.png") no-repeat center;
-    background-size: contain;
-    width: 140px;
-    height: 107px;
+    width: 120px;
+    height: 60px;
     margin-right: 20px;
+
+    background-image: url("./logo.png");
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: contain;
 }
 
 /* ---- Кнопки ---- */
