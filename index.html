@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Юбилейная акция GO</title>
+    <!-- Подключаем стили -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Шапка сайта -->
+    <header class="header">
+        <div class="container header-content">
+            <a href="./" class="navbar-brand"></a>
+            <button id="adminLoginBtn" class="btn btn-outline" style="position: relative; z-index: 10;">Вход</button>
+            <button id="adminLogoutBtn" class="btn btn-outline hidden" style="position: relative; z-index: 10;">Выход</button>
+        </div>
+    </header>
+
+    <!-- Основная пользовательская часть -->
+    <main id="mainView">
+        <!-- Баннер акции -->
+        <section class="hero">
+            <div class="container hero-content">
+                <h1>Выиграй смартфон Xiaomi!</h1>
+                <p style="font-size: 1.2rem; margin-bottom: 25px;">Юбилейная акция от сети салонов мобильных устройств GO. Регистрируй чеки и выигрывай!</p>
+
+                <!-- Отсчет до розыгрыша -->
+                <div class="countdown-wrapper" id="countdownWrapper">
+                    <h3 id="countdownTitle">До розыгрыша осталось:</h3>
+                    <div class="countdown" id="countdown">
+                        <div class="countdown-item">
+                            <span id="cdDays">00</span>
+                            <div class="countdown-label">Дней</div>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cdHours">00</span>
+                            <div class="countdown-label">Часов</div>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cdMinutes">00</span>
+                            <div class="countdown-label">Минут</div>
+                        </div>
+                        <div class="countdown-item">
+                            <span id="cdSeconds">00</span>
+                            <div class="countdown-label">Секунд</div>
+                        </div>
+                    </div>
+                    <p id="countdownMessage" class="countdown-message hidden">Ожидайте оглашения результатов!</p>
+                </div>
+
+                <div class="rules">
+                    <h3 style="color: var(--primary);">Условия участия:</h3>
+                    <ul style="margin-bottom: 15px; line-height: 1.8;">
+                        <li><strong>Совершите покупку</strong> в любом салоне GO на сумму не менее 500 рублей.</li>
+                        <li><strong>Сохраните</strong> кассовый чек.</li>
+                        <li><strong>Зарегистрируйте</strong> чек на сайте акции.</li>
+                        <li><strong>Укажите</strong> номер телефона для связи.</li>
+                        <li>Получите шанс выиграть главный приз: <a href="https://go-go.md/products/smartfon-xiaomi-17-12512-simesim-alpine-pink" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: none; border-bottom: 1px dashed var(--primary);">Xiaomi 17 (12/512) Sim+eSim Black</a>!</li>
+                    </ul>
+                    <div style="padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 0.95rem; color: var(--text-muted);">
+                        <strong>Регистрация чеков:</strong> с 22 по 30 июня 2026 года<br>
+                        <strong>Розыгрыш главного приза:</strong> 2 июля 2026 года
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Форма регистрации чека -->
+        <section class="registration-form">
+            <div class="container">
+                <h2>Регистрация чека</h2>
+                <form id="promoForm">
+                    <div class="form-group">
+                        <label for="receipt">Номер чека *</label>
+                        <input type="text" id="receipt" name="receipt" required placeholder="Например: 123456789">
+                    </div>
+                    <div class="form-group">
+                        <label for="name">Ваше Имя *</label>
+                        <input type="text" id="name" name="name" required placeholder="Иван Иванов">
+                    </div>
+                    <div class="form-group">
+                        <label for="phone">Номер телефона *</label>
+                        <input type="tel" id="phone" name="phone" required placeholder="+373 (XX) XXX-XXX">
+                    </div>
+                    <div id="formMessage" class="message"></div>
+                    <button type="submit" class="btn btn-primary" id="submitBtn">Зарегистрировать чек</button>
+                </form>
+            </div>
+        </section>
+
+        <!-- Блок Победителей -->
+        <section class="winners-section">
+            <div class="container">
+                <h2>Победители акции</h2>
+                <div id="winnersList" class="winners-list">
+                    <p class="loading">Загрузка списка победителей...</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Панель Администратора (скрыта по умолчанию) -->
+    <main id="adminView" class="hidden">
+        <div class="container">
+            <h2>Панель Администратора</h2>
+            
+            <!-- Статистика -->
+            <div class="admin-stats">
+                <div class="stat-card">
+                    <h4>Участников</h4>
+                    <p id="statTotalParticipants">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Победителей</h4>
+                    <p id="statTotalWinners">0</p>
+                </div>
+                <div class="stat-card">
+                    <h4>Последний розыгрыш</h4>
+                    <p id="statLastDraw">-</p>
+                </div>
+            </div>
+
+            <!-- Действия -->
+            <div class="admin-actions">
+                <button id="drawWinnerBtn" class="btn btn-success">Подвести итоги (выбрать победителя)</button>
+                <div id="drawMessage" class="message"></div>
+            </div>
+
+            <!-- Поиск -->
+            <div class="admin-search">
+                <input type="text" id="searchInput" placeholder="Поиск по номеру чека, имени или телефону...">
+            </div>
+
+            <!-- Таблица участников -->
+            <div class="participants-list">
+                <h3>Зарегистрированные участники</h3>
+                <div class="table-responsive">
+                    <table id="participantsTable">
+                        <thead>
+                            <tr>
+                                <th>Номер чека</th>
+                                <th>Имя</th>
+                                <th>Телефон</th>
+                                <th>Дата регистрации</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participantsBody">
+                            <!-- Сюда добавляются строки скриптом -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="load-more-container">
+                    <button id="loadMoreBtn" class="btn btn-outline hidden">Показать ещё</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Модальное окно Авторизации -->
+    <div id="loginModal" class="modal hidden">
+        <div class="modal-content">
+            <span class="close-btn" id="closeModalBtn">&times;</span>
+            <h2>Вход для администратора</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="adminUser">Логин</label>
+                    <input type="text" id="adminUser" required>
+                </div>
+                <div class="form-group">
+                    <label for="adminPass">Пароль</label>
+                    <input type="password" id="adminPass" required>
+                </div>
+                <div id="loginMessage" class="message"></div>
+                <button type="submit" class="btn btn-primary">Войти</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Модальное окно Инструкции (показывается, если GAS не настроен) -->
+    <div id="setupModal" class="modal hidden">
+         <div class="modal-content" style="max-width: 800px;">
+             <span class="close-btn" id="closeSetupBtn">&times;</span>
+             <h2>Инструкция по настройке Google Sheets 🗂️</h2>
+             <div class="instruction-box">
+                 <p>API не настроено в файле конфигурации. Сейчас приложение использует <b>демо-данные ( Mock )</b>.</p>
+                 <p>Чтобы сайт начал сохранять данные в Google Таблицы, необходимо:</p>
+                 <ol>
+                     <li>Создать Google Таблицу и назвать новую вкладку <code>Участники</code> и еще одну <code>Победители</code>.</li>
+                     <li>В верхнем меню выбрать: <strong>Расширения -> Apps Script</strong>.</li>
+                     <li>Скопировать код из файла <code>google_apps_script.js</code> (он сгенерирован для вас) и вставить в редактор.</li>
+                     <li>Нажать кнопку <strong>Начать развертывание -> Новое развертывание</strong>.</li>
+                     <li>Выбрать тип: <strong>Веб-приложение</strong>. В доступе указать <strong>"Все"</strong>.</li>
+                     <li>Скопировать полученный URL и вставить его в файл <code>config.json</code> (В поле <code>googleScriptUrl</code>).</li>
+                 </ol>
+             </div>
+         </div>
+    </div>
+
+    <!-- Подключаем основной скрипт -->
+    <script type="module" src="script.js"></script>
+</body>
+</html>
