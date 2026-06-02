@@ -540,7 +540,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       <tr>
         <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted, #888);">
           <div class="loader-spinner" style="display: inline-block; width: 22px; height: 22px; border: 2.5px solid #333; border-top-color: var(--primary, #00a658); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 12px; vertical-align: middle;"></div>
-          Загрузка участников из Google Таблиц...
+          Загрузка участников...
         </td>
       </tr>
     `;
