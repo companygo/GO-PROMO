@@ -78,6 +78,10 @@ background-size: contain;
 transition: margin-left 0.3s ease;
 }
 
+#adminLoginBtn,
+#adminLogoutBtn {
+    transform: translateX(320px);
+}
 /* ---- Кнопки ---- */
 .btn {
     padding: 10px 20px;
