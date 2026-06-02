@@ -1,250 +1,881 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link rel="apple-touch-icon" href="favicon.png" />
     <title>Юбилейная акция GO</title>
     <!-- Подключаем стили -->
-    <link rel="stylesheet" href="style.css">
-</head>
-<body>
+    <link rel="stylesheet" href="style.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css"
+    />
+  </head>
+  <body>
     <!-- Шапка сайта -->
     <header class="header">
-        <div class="container header-content">
-            <a href="./" class="navbar-brand"></a>
-            <button id="adminLoginBtn" class="btn btn-outline" style="position: relative; z-index: 10;">Вход</button>
-            <button id="adminLogoutBtn" class="btn btn-outline hidden" style="position: relative; z-index: 10;">Выход</button>
-        </div>
+      <div class="container header-content">
+        <a href="./" class="navbar-brand"></a>
+        <button
+          id="adminLoginBtn"
+          class="btn btn-outline"
+          style="position: relative; z-index: 10"
+        >
+          Вход
+        </button>
+        <button
+          id="adminLogoutBtn"
+          class="btn btn-outline hidden"
+          style="position: relative; z-index: 10"
+        >
+          Выход
+        </button>
+      </div>
     </header>
 
     <!-- Основная пользовательская часть -->
     <main id="mainView">
-        <!-- Баннер акции -->
-        <section class="hero">
-            <div class="container hero-content">
-                <h1>Выиграй смартфон Xiaomi!</h1>
-                <p style="font-size: 1.2rem; margin-bottom: 25px;">Юбилейная акция от сети салонов мобильных устройств GO. Регистрируй чеки и выигрывай!</p>
+      <!-- Баннер акции -->
+      <section class="hero">
+        <div class="container hero-content">
+          <h1>Отпразднуй день рождения сети салонов GO вместе с нами!</h1>
+          <p
+            style="
+              font-size: 1.3rem;
+              margin-bottom: 25px;
+              color: var(--primary);
+              font-weight: 600;
+            "
+          >
+            Выиграй главный приз — смартфон Xiaomi!
+          </p>
 
-                <!-- Отсчет до розыгрыша -->
-                <div class="countdown-wrapper" id="countdownWrapper">
-                    <h3 id="countdownTitle">До розыгрыша осталось:</h3>
-                    <div class="countdown" id="countdown">
-                        <div class="countdown-item">
-                            <span id="cdDays">00</span>
-                            <div class="countdown-label">Дней</div>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cdHours">00</span>
-                            <div class="countdown-label">Часов</div>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cdMinutes">00</span>
-                            <div class="countdown-label">Минут</div>
-                        </div>
-                        <div class="countdown-item">
-                            <span id="cdSeconds">00</span>
-                            <div class="countdown-label">Секунд</div>
-                        </div>
-                    </div>
-                    <p id="countdownMessage" class="countdown-message hidden">Ожидайте оглашения результатов!</p>
-                </div>
-
-                <div class="rules">
-                    <h3 style="color: var(--primary);">Условия участия:</h3>
-                    <ul style="margin-bottom: 15px; line-height: 1.8;">
-                        <li><strong>Совершите покупку</strong> в любом салоне GO на сумму не менее 500 рублей.</li>
-                        <li><strong>Сохраните</strong> кассовый чек.</li>
-                        <li><strong>Зарегистрируйте</strong> чек на сайте акции.</li>
-                        <li><strong>Укажите</strong> номер телефона для связи.</li>
-                        <li>Получите шанс выиграть главный приз: <a href="https://go-go.md/products/smartfon-xiaomi-17-12512-simesim-alpine-pink" target="_blank" style="color: var(--primary); font-weight: bold; text-decoration: none; border-bottom: 1px dashed var(--primary);">Xiaomi 17 (12/512) Sim+eSim Black</a>!</li>
-                    </ul>
-                    <div style="padding-top: 15px; border-top: 1px solid var(--border-color); font-size: 0.95rem; color: var(--text-muted);">
-                        <strong>Регистрация чеков:</strong> с 22 по 30 июня 2026 года<br>
-                        <strong>Розыгрыш главного приза:</strong> 2 июля 2026 года
-                    </div>
-                </div>
+          <!-- Отсчет до розыгрыша -->
+          <div class="countdown-wrapper" id="countdownWrapper">
+            <h3 id="countdownTitle">До розыгрыша осталось:</h3>
+            <div class="countdown" id="countdown">
+              <div class="countdown-item">
+                <span id="cdDays">00</span>
+                <div class="countdown-label">Дней</div>
+              </div>
+              <div class="countdown-item">
+                <span id="cdHours">00</span>
+                <div class="countdown-label">Часов</div>
+              </div>
+              <div class="countdown-item">
+                <span id="cdMinutes">00</span>
+                <div class="countdown-label">Минут</div>
+              </div>
+              <div class="countdown-item">
+                <span id="cdSeconds">00</span>
+                <div class="countdown-label">Секунд</div>
+              </div>
             </div>
-        </section>
+            <p id="countdownMessage" class="countdown-message hidden">
+              Ожидайте оглашения результатов!
+            </p>
+          </div>
 
-        <!-- Форма регистрации чека -->
-        <section class="registration-form">
-            <div class="container">
-                <h2>Регистрация чека</h2>
-                <form id="promoForm">
-                    <div class="form-group">
-                        <label for="receipt">Номер чека *</label>
-                        <input type="text" id="receipt" name="receipt" required placeholder="Например: 123456789">
-                    </div>
-                    <div class="form-group">
-                        <label for="name">Ваше Имя *</label>
-                        <input type="text" id="name" name="name" required placeholder="Иван Иванов">
-                    </div>
-                    <div class="form-group">
-                        <label for="phone">Номер телефона *</label>
-                        <input type="tel" id="phone" name="phone" required placeholder="+373 (XX) XXX-XXX">
-                    </div>
-                    <div id="formMessage" class="message"></div>
-                    <button type="submit" class="btn btn-primary" id="submitBtn">Зарегистрировать чек</button>
-                </form>
+          <div class="rules">
+            <div
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+                gap: 20px;
+                text-align: left;
+              "
+            >
+              <div>
+                <h3 style="color: var(--primary); margin-bottom: 10px">
+                  Условия участия:
+                </h3>
+                <ul style="line-height: 1.8; padding-left: 0; list-style-type: none; counter-reset: item;">
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">1</span>
+                    <span>Совершите покупку в любом салоне GO.</span>
+                  </li>
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">2</span>
+                    <span>
+                      Сумма покупки должна составлять
+                      <strong style="color: var(--primary)">не менее 1500 рублей</strong>.
+                    </span>
+                  </li>
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">3</span>
+                    <span>Сохраните кассовый чек.</span>
+                  </li>
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">4</span>
+                    <span>Зарегистрируйте чек на сайте акции.</span>
+                  </li>
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">5</span>
+                    <span>Укажите номер телефона для связи.</span>
+                  </li>
+                  <li style="counter-increment: item; display: flex; gap: 10px;">
+                    <span style="font-weight: 600; min-width: 15px;">6</span>
+                    <span>Получите шанс выиграть главный приз.</span>
+                  </li>
+                </ul>
+              </div>
+              <div>
+                <h3 style="color: var(--primary); margin-bottom: 10px">
+                  Дополнительные правила:
+                </h3>
+                <ul
+                  style="
+                    line-height: 1.8;
+                    padding-left: 15px;
+                    font-size: 0.95rem;
+                  "
+                >
+                  <li>Один чек может быть зарегистрирован только один раз.</li>
+                  <li>Каждый чек участвует как отдельная заявка.</li>
+                  <li>
+                    Организатор вправе запросить оригинал чека для подтверждения
+                    выигрыша.
+                  </li>
+                  <li>
+                    Победитель определяется случайным образом среди всех
+                    зарегистрированных участников.
+                  </li>
+                  <li>
+                    Результаты публикуются на сайте акции и/или в социальных
+                    сетях GO.
+                  </li>
+                </ul>
+              </div>
             </div>
-        </section>
+            <div
+              style="
+                padding-top: 15px;
+                margin-top: 15px;
+                border-top: 1px solid var(--border-color);
+                font-size: 0.95rem;
+                color: var(--text-muted);
+                text-align: center;
+              "
+            >
+              <strong>Регистрация чеков:</strong> <span id="registrationPeriodText">с 15 по 30 июня 2026 года</span><br />
+              <strong>Розыгрыш главного приза:</strong> <span id="drawDateText">2 июля 2026 года</span>
+            </div>
+          </div>
+        </div>
+      </section>
 
-        <!-- Блок Победителей -->
-        <section class="winners-section">
-            <div class="container">
-                <h2>Победители акции</h2>
-                <div id="winnersList" class="winners-list">
-                    <p class="loading">Загрузка списка победителей...</p>
+      <!-- Блок призов -->
+      <section class="prizes-section">
+        <div class="container">
+          <h2
+            style="
+              text-align: center;
+              font-size: 2rem;
+              color: var(--primary);
+              margin-bottom: 10px;
+            "
+          >
+            Призовой фонд акции
+          </h2>
+          <p
+            style="
+              text-align: center;
+              color: var(--text-muted);
+              margin-bottom: 30px;
+              font-size: 1.1rem;
+            "
+          >
+            Каждый чек участвует в розыгрыше ценных призов на юбилей GO!
+          </p>
+          <div class="prizes-grid">
+            <a
+              href="https://go-go.md/products/smartfon-xiaomi-redmi-note-15-pro-plus-5g-8256-simesim-glacier-blue?ysclid=mpx3ampj4b351101638"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">1</div>
+              <div class="prize-text">
+                Смартфон Redmi Note 15 Pro Plus 5G 8/256
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/matras-turisticheskij-youpin-one-night-automatic-inflatable-leisure-bed-ps1"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">2</div>
+              <div class="prize-text">
+                Матрас туристический Youpin One Night Automatic Inflatable
+                Leisure Bed PS1
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/videoregistrator-hoco-dv8-with-rear-camera"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">3</div>
+              <div class="prize-text">
+                Видеорегистратор HOCO DV8 with rear camera
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/naushniki-baseus-bluetooth-bh1-nc-black?ysclid=mpx3di7gle345525462"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">4</div>
+              <div class="prize-text">
+                Наушники Baseus Bluetooth BH1 NC Black
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/chasy-smart-xiaomi-redmi-watch-5-active-midnight-black?ysclid=mpx3eahvbl435424453"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">5</div>
+              <div class="prize-text">
+                Часы-смарт Xiaomi Redmi Watch 5 Active
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/kolonka-blackview-bluetooth-aurabass-3-16w-black?ysclid=mpx3etmup1894917485"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">6</div>
+              <div class="prize-text">
+                Колонка Blackview Bluetooth Aurabass 3 16W Black
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/vesy-napolnye-xiaomi-mi-body-composition-scale-s400?ysclid=mpx3fbfdhj409410102"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">7</div>
+              <div class="prize-text">
+                Весы напольные Xiaomi Mi Body Composition Scale S400
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/naushniki-xiaomi-bluetooth-redmi-buds-6-play-black?ysclid=mpx3fprpsz971563198"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">8</div>
+              <div class="prize-text">
+                Наушники Xiaomi Bluetooth Redmi Buds 6 Play Black
+              </div>
+            </a>
+            <a
+              href="https://go-go.md/products/nochniki-k-1155-cute-panda-panda?ysclid=mpx3g0uwwy472127586"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">9</div>
+              <div class="prize-text">Ночники K-1155 Cute Panda</div>
+            </a>
+            <a
+              href="https://go-go.md/products/naushniki-xiaomi-headphones-basic-chernye?ysclid=mpx3gmv1zp933702573"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">10</div>
+              <div class="prize-text">
+                Наушники Xiaomi Headphones Basic черные
+              </div>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      <!-- Форма регистрации чека -->
+      <section class="registration-form">
+        <div class="container">
+          <h2>Регистрация чека</h2>
+          <form id="promoForm">
+            <div class="form-group">
+              <label for="receipt">Фискальный код чека (ФД)</label>
+              <input
+                type="text"
+                id="receipt"
+                name="receipt"
+                required
+                maxlength="12"
+                placeholder="Например: 000081234567"
+                oninput="this.value = this.value.replace(/\D/g, '')"
+              />
+            </div>
+            <div class="form-group">
+              <label>Дата и время формирования чека</label>
+              <div class="check-time-row" style="display: flex; gap: 10px">
+                <div style="flex: 1">
+                  <input
+                    type="text"
+                    id="checkDate"
+                    name="checkDate"
+                    required
+                    placeholder="Дата(ДД.ММ.ГГГГ)"
+                  />
                 </div>
+                <div style="flex: 1">
+                  <input
+                    type="text"
+                    id="checkTimeOnly"
+                    name="checkTimeOnly"
+                    required
+                    placeholder="Время(ЧЧ:ММ:СС)"
+                    oninput="
+                      this.value = this.value.replace(/[^0-9:\.\-]/g, '')
+                    "
+                  />
+                </div>
+              </div>
             </div>
-        </section>
+            <div class="form-group">
+              <label for="amount">Сумма покупки (руб.)</label>
+              <input
+                type="number"
+                id="amount"
+                name="amount"
+                required
+                min="1500"
+                step="1"
+                placeholder="Минимум 1500 рублей"
+                oninput="this.value = this.value.replace(/\D/g, '')"
+              />
+            </div>
+            <div class="form-group">
+              <label for="name">ФИО</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="Иванов Иван Иванович"
+              />
+            </div>
+            <div class="form-group">
+              <label for="phone">Номер телефона</label>
+              <div class="phone-input-group">
+                <span class="phone-prefix">+373</span>
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  required
+                  placeholder="77712345"
+                  maxlength="8"
+                  oninput="this.value = this.value.replace(/\D/g, '')"
+                />
+              </div>
+            </div>
+            <div id="formMessage" class="message"></div>
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+              Зарегистрировать чек
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <!-- Блок Победителей -->
+      <section class="winners-section">
+        <div class="container">
+          <h2>Победители акции</h2>
+          <div id="winnersList" class="winners-list">
+            <p class="loading">Загрузка списка победителей...</p>
+          </div>
+        </div>
+      </section>
     </main>
 
     <!-- Панель Администратора (скрыта по умолчанию) -->
     <main id="adminView" class="hidden">
-        <div class="container">
-            <h2>Панель Администратора</h2>
-
-            <!-- Вкладки панели администратора -->
-            <div class="admin-tabs" style="display: flex; gap: 15px; margin-top: 20px; margin-bottom: 30px; border-bottom: 2px solid var(--border-color); padding-bottom: 10px;">
-                <button id="tabParticipants" class="btn btn-tab active" style="background: none; border: none; color: var(--primary); border-bottom: 3px solid var(--primary); padding: 10px 15px; font-weight: bold; cursor: pointer; font-size: 1.1rem; border-radius: 0; outline: none; font-family: var(--font-heading);">Участники</button>
-                <button id="tabSettings" class="btn btn-tab" style="background: none; border: none; color: var(--text-muted); padding: 10px 15px; font-weight: bold; cursor: pointer; font-size: 1.1rem; border-radius: 0; outline: none; font-family: var(--font-heading);">Настройки акции</button>
-            </div>
-
-            <!-- Вкладка: Участники -->
-            <div id="participantsTabContent">
-                <!-- Статистика -->
-                <div class="admin-stats">
-                    <div class="stat-card">
-                        <h4>Участников</h4>
-                        <p id="statTotalParticipants">0</p>
-                    </div>
-                    <div class="stat-card">
-                        <h4>Победителей</h4>
-                        <p id="statTotalWinners">0</p>
-                    </div>
-                </div>
-
-                <!-- Действия -->
-                <div class="admin-actions">
-                    <button id="drawWinnerBtn" class="btn btn-success">Подвести итоги (выбрать победителя)</button>
-                    <div id="drawMessage" class="message"></div>
-                </div>
-
-                <!-- Поиск -->
-                <div class="admin-search">
-                    <input type="text" id="searchInput" placeholder="Поиск по номеру чека, имени или телефону...">
-                </div>
-
-                <!-- Таблица участников -->
-                <div class="participants-list">
-                    <h3>Зарегистрированные участники</h3>
-                    <div class="table-responsive">
-                        <table id="participantsTable">
-                            <thead>
-                                <tr>
-                                    <th>Номер чека</th>
-                                    <th>Имя</th>
-                                    <th>Телефон</th>
-                                    <th>Дата регистрации</th>
-                                    <th>Статус / Действие</th>
-                                </tr>
-                            </thead>
-                            <tbody id="participantsBody">
-                                <!-- Сюда добавляются строки скриптом -->
-                            </tbody>
-                        </table>
-                    </div>
-                    <div class="load-more-container">
-                        <button id="loadMoreBtn" class="btn btn-outline hidden">Показать ещё</button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Вкладка: Настройки акции -->
-            <div id="settingsTabContent" class="hidden" style="background: var(--card-bg); padding: 30px; border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border-color); margin-bottom: 40px;">
-                <h3 style="margin-bottom: 25px; color: var(--primary);">⚙️ Управление настройками акции</h3>
-
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-bottom: 30px;">
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label for="adminStartDate" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color);">Дата начала регистрации *</label>
-                        <input type="text" id="adminStartDate" required placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 22.06.2026 00:00)" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius); background-color: #121212; color: var(--text-color); font-size: 1rem; outline: none; transition: border-color 0.3s;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label for="adminEndDate" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color);">Дата окончания регистрации *</label>
-                        <input type="text" id="adminEndDate" required placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 30.06.2026 23:59)" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius); background-color: #121212; color: var(--text-color); font-size: 1rem; outline: none; transition: border-color 0.3s;">
-                    </div>
-
-                    <div class="form-group" style="margin-bottom: 20px;">
-                        <label for="adminDrawDate" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color);">Дата проведения розыгрыша *</label>
-                        <input type="text" id="adminDrawDate" required placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 02.07.2026 20:00)" style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: var(--radius); background-color: #121212; color: var(--text-color); font-size: 1rem; outline: none; transition: border-color 0.3s;">
-                    </div>
-                </div>
-
-                <div style="background: #111; padding: 25px; border-radius: var(--radius); border-left: 4px solid var(--primary); margin-bottom: 30px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 15px;">
-                    <div>
-                        <h4 style="margin-bottom: 8px; color: var(--text-color); font-size: 1.1rem;">Принудительное управление регистрацией</h4>
-                        <p style="color: var(--text-muted); font-size: 0.95rem; max-width: 550px;">Вы можете вручную закрыть или открыть регистрацию чеков в любой момент, независимо от установленных дат проведения.</p>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span id="adminRegStatusText" style="font-weight: bold; padding: 6px 14px; border-radius: 20px; font-size: 0.9rem;">Загрузка...</span>
-                        <button id="toggleRegBtn" class="btn btn-outline" style="padding: 8px 16px; font-size: 0.9rem;">Изменить</button>
-                    </div>
-                </div>
-
-                <div id="settingsMessage" class="message" style="margin-bottom: 25px;"></div>
-
-                <div style="text-align: right;">
-                    <button id="saveSettingsBtn" class="btn btn-primary" style="padding: 12px 30px; font-size: 1.05rem;">Сохранить настройки</button>
-                </div>
-            </div>
+      <div class="container">
+        <div
+          id="adminSyncError"
+          style="
+            display: none;
+            background: rgba(255, 107, 107, 0.1);
+            color: #ff6b6b;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            border: 1px solid #ff6b6b;
+            font-size: 0.95rem;
+            line-height: 1.5;
+          "
+        >
+          <strong style="font-size: 1.05rem"
+            >⚠️ Версия Google Apps Script устарела:</strong
+          ><br /><br />
+          Мы обнаружили, что в списке есть участники с пометкой "Победитель", но
+          призы не отображаются (0 победителей). Это происходит потому, что вы
+          скопировали новый код в Google Apps Script, но
+          <b>забыли его развернуть</b>.<br /><br />
+          Как исправить прямо сейчас:<br />
+          1. В Google Скриптах нажмите синюю кнопку
+          <b>Начать развертывание</b> (Deploy) &rarr;
+          <b>Новое развертывание</b> (New deployment).<br />
+          2. Обязательно выберите <b>Новое</b> (ни в коем случае не тестовое,
+          это важно).<br />
+          3. Нажмите <b>Начать развертывание</b> и обновите эту страницу, призы
+          появятся.<br /><br />
+          <i
+            >Альтернативное решение на случай спешки: Включите переключатель
+            "Опубликовать победителей (для всех)" внизу этой страницы.</i
+          >
         </div>
+        <h2>Панель Администратора</h2>
+
+        <!-- Вкладки панели администратора -->
+        <div
+          class="admin-tabs"
+          style="
+            display: flex;
+            gap: 15px;
+            margin-top: 20px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 10px;
+          "
+        >
+          <button
+            id="tabParticipants"
+            class="btn btn-tab active"
+            style="
+              background: none;
+              border: none;
+              color: var(--primary);
+              border-bottom: 3px solid var(--primary);
+              padding: 10px 15px;
+              font-weight: bold;
+              cursor: pointer;
+              font-size: 1.1rem;
+              border-radius: 0;
+              outline: none;
+              font-family: var(--font-heading);
+            "
+          >
+            Участники
+          </button>
+          <button
+            id="tabSettings"
+            class="btn btn-tab"
+            style="
+              background: none;
+              border: none;
+              color: var(--text-muted);
+              padding: 10px 15px;
+              font-weight: bold;
+              cursor: pointer;
+              font-size: 1.1rem;
+              border-radius: 0;
+              outline: none;
+              font-family: var(--font-heading);
+            "
+          >
+            Настройки акции
+          </button>
+        </div>
+
+        <!-- Вкладка: Участники -->
+        <div id="participantsTabContent">
+          <!-- Статистика -->
+          <div class="admin-stats">
+            <div class="stat-card">
+              <h4>Участников</h4>
+              <p id="statTotalParticipants">0</p>
+            </div>
+            <div class="stat-card">
+              <h4>Победителей</h4>
+              <p id="statTotalWinners">0</p>
+            </div>
+          </div>
+
+          <!-- Статус призов -->
+          <div
+            id="prizeStatusSection"
+            style="
+              background: #111;
+              padding: 20px;
+              border-radius: 8px;
+              margin-bottom: 20px;
+            "
+          >
+            <h3>Статус призов</h3>
+            <div
+              id="prizeStatusList"
+              style="
+                display: grid;
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 10px;
+              "
+            >
+              <!-- Заполняется скриптом -->
+            </div>
+          </div>
+
+          <!-- Действия -->
+          <div class="admin-actions">
+            <button id="drawWinnerBtn" class="btn btn-success">
+              Подвести итоги (выбрать победителя)
+            </button>
+            <div id="drawMessage" class="message"></div>
+          </div>
+
+          <!-- Поиск -->
+          <div class="admin-search">
+            <input
+              type="text"
+              id="searchInput"
+              placeholder="Поиск по номеру чека, ФИО или телефону..."
+            />
+          </div>
+
+          <!-- Таблица участников -->
+          <div class="participants-list">
+            <h3>Зарегистрированные участники</h3>
+            <div class="table-responsive">
+              <table id="participantsTable">
+                <thead>
+                  <tr>
+                    <th>ФД</th>
+                    <th>ФИО</th>
+                    <th>Телефон</th>
+                    <th>Время чека</th>
+                    <th>Сумма (руб.)</th>
+                    <th>Дата регистрации</th>
+                    <th>Статус / Действие</th>
+                  </tr>
+                </thead>
+                <tbody id="participantsBody">
+                  <!-- Сюда добавляются строки скриптом -->
+                </tbody>
+              </table>
+            </div>
+            <div class="load-more-container">
+              <button id="loadMoreBtn" class="btn btn-outline hidden">
+                Показать ещё
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Вкладка: Настройки акции -->
+        <div
+          id="settingsTabContent"
+          class="hidden"
+          style="
+            background: var(--card-bg);
+            padding: 30px;
+            border-radius: var(--radius);
+            box-shadow: var(--shadow);
+            border: 1px solid var(--border-color);
+            margin-bottom: 40px;
+          "
+        >
+          <h3 style="margin-bottom: 25px; color: var(--primary)">
+            ⚙️ Управление настройками акции
+          </h3>
+
+          <div
+            style="
+              display: grid;
+              grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+              gap: 20px;
+              margin-bottom: 30px;
+            "
+          >
+            <div class="form-group" style="margin-bottom: 20px">
+              <label
+                for="adminStartDate"
+                style="
+                  display: block;
+                  margin-bottom: 8px;
+                  font-weight: 600;
+                  color: var(--text-color);
+                "
+                >Дата начала регистрации</label
+              >
+              <input
+                type="text"
+                id="adminStartDate"
+                required
+                placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 22.06.2026 00:00)"
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  border: 1px solid var(--border-color);
+                  border-radius: var(--radius);
+                  background-color: #121212;
+                  color: var(--text-color);
+                  font-size: 1rem;
+                  outline: none;
+                  transition: border-color 0.3s;
+                "
+              />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px">
+              <label
+                for="adminEndDate"
+                style="
+                  display: block;
+                  margin-bottom: 8px;
+                  font-weight: 600;
+                  color: var(--text-color);
+                "
+                >Дата окончания регистрации</label
+              >
+              <input
+                type="text"
+                id="adminEndDate"
+                required
+                placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 30.06.2026 23:59)"
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  border: 1px solid var(--border-color);
+                  border-radius: var(--radius);
+                  background-color: #121212;
+                  color: var(--text-color);
+                  font-size: 1rem;
+                  outline: none;
+                  transition: border-color 0.3s;
+                "
+              />
+            </div>
+
+            <div class="form-group" style="margin-bottom: 20px">
+              <label
+                for="adminDrawDate"
+                style="
+                  display: block;
+                  margin-bottom: 8px;
+                  font-weight: 600;
+                  color: var(--text-color);
+                "
+                >Дата проведения розыгрыша</label
+              >
+              <input
+                type="text"
+                id="adminDrawDate"
+                required
+                placeholder="ДД.ММ.ГГГГ ЧЧ:ММ (например: 02.07.2026 20:00)"
+                style="
+                  width: 100%;
+                  padding: 12px;
+                  border: 1px solid var(--border-color);
+                  border-radius: var(--radius);
+                  background-color: #121212;
+                  color: var(--text-color);
+                  font-size: 1rem;
+                  outline: none;
+                  transition: border-color 0.3s;
+                "
+              />
+            </div>
+          </div>
+
+          <div
+            style="
+              background: #111;
+              padding: 25px;
+              border-radius: var(--radius);
+              border-left: 4px solid var(--primary);
+              margin-bottom: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 15px;
+            "
+          >
+            <div>
+              <h4
+                style="
+                  margin-bottom: 8px;
+                  color: var(--text-color);
+                  font-size: 1.1rem;
+                "
+              >
+                Публикация итогов
+              </h4>
+              <p
+                style="
+                  color: var(--text-muted);
+                  font-size: 0.95rem;
+                  max-width: 550px;
+                "
+              >
+                Если выключено, список победителей не будет виден пользователям
+                сайта.
+              </p>
+            </div>
+            <label
+              style="
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                cursor: pointer;
+                color: var(--text-color);
+                font-weight: bold;
+              "
+            >
+              <input
+                type="checkbox"
+                id="publishWinners"
+                style="width: 20px; height: 20px"
+              />
+              Опубликовать
+            </label>
+          </div>
+
+          <div
+            style="
+              background: #111;
+              padding: 25px;
+              border-radius: var(--radius);
+              border-left: 4px solid var(--primary);
+              margin-bottom: 30px;
+              display: flex;
+              align-items: center;
+              justify-content: space-between;
+              flex-wrap: wrap;
+              gap: 15px;
+            "
+          >
+            <div>
+              <h4
+                style="
+                  margin-bottom: 8px;
+                  color: var(--text-color);
+                  font-size: 1.1rem;
+                "
+              >
+                Принудительное управление регистрацией
+              </h4>
+              <p
+                style="
+                  color: var(--text-muted);
+                  font-size: 0.95rem;
+                  max-width: 550px;
+                "
+              >
+                Вы можете вручную закрыть или открыть регистрацию чеков в любой
+                момент, независимо от установленных дат проведения.
+              </p>
+            </div>
+            <div style="display: flex; align-items: center; gap: 15px">
+              <span
+                id="adminRegStatusText"
+                style="
+                  font-weight: bold;
+                  padding: 6px 14px;
+                  border-radius: 20px;
+                  font-size: 0.9rem;
+                "
+                >Загрузка...</span
+              >
+              <button
+                id="toggleRegBtn"
+                class="btn btn-outline"
+                style="padding: 8px 16px; font-size: 0.9rem"
+              >
+                Изменить
+              </button>
+            </div>
+          </div>
+
+          <div
+            id="settingsMessage"
+            class="message"
+            style="margin-bottom: 25px"
+          ></div>
+
+          <div style="text-align: right">
+            <button
+              id="saveSettingsBtn"
+              class="btn btn-primary"
+              style="padding: 12px 30px; font-size: 1.05rem"
+            >
+              Сохранить настройки
+            </button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <!-- Модальное окно Авторизации -->
     <div id="loginModal" class="modal hidden">
-        <div class="modal-content">
-            <span class="close-btn" id="closeModalBtn">&times;</span>
-            <h2>Вход для администратора</h2>
-            <form id="loginForm">
-                <div class="form-group">
-                    <label for="adminUser">Логин</label>
-                    <input type="text" id="adminUser" required>
-                </div>
-                <div class="form-group">
-                    <label for="adminPass">Пароль</label>
-                    <input type="password" id="adminPass" required>
-                </div>
-                <div id="loginMessage" class="message"></div>
-                <button type="submit" class="btn btn-primary">Войти</button>
-            </form>
-        </div>
+      <div class="modal-content">
+        <span class="close-btn" id="closeModalBtn">&times;</span>
+        <h2>Вход для администратора</h2>
+        <form id="loginForm">
+          <div class="form-group">
+            <label for="adminUser">Логин</label>
+            <input type="text" id="adminUser" required />
+          </div>
+          <div class="form-group">
+            <label for="adminPass">Пароль</label>
+            <input type="password" id="adminPass" required />
+          </div>
+          <div id="loginMessage" class="message"></div>
+          <button type="submit" class="btn btn-primary">Войти</button>
+        </form>
+      </div>
     </div>
 
     <!-- Модальное окно Инструкции (показывается, если GAS не настроен) -->
     <div id="setupModal" class="modal hidden">
-         <div class="modal-content" style="max-width: 800px;">
-             <span class="close-btn" id="closeSetupBtn">&times;</span>
-             <h2>Инструкция по настройке Google Sheets 🗂️</h2>
-             <div class="instruction-box">
-                 <p>API не настроено в файле конфигурации. Сейчас приложение использует <b>демо-данные ( Mock )</b>.</p>
-                 <p>Чтобы сайт начал сохранять данные в Google Таблицы, необходимо:</p>
-                 <ol>
-                     <li>Создать Google Таблицу и назвать новую вкладку <code>Участники</code> и еще одну <code>Победители</code>.</li>
-                     <li>В верхнем меню выбрать: <strong>Расширения -> Apps Script</strong>.</li>
-                     <li>Скопировать код из файла <code>google_apps_script.js</code> (он сгенерирован для вас) и вставить в редактор.</li>
-                     <li>Нажать кнопку <strong>Начать развертывание -> Новое развертывание</strong>.</li>
-                     <li>Выбрать тип: <strong>Веб-приложение</strong>. В доступе указать <strong>"Все"</strong>.</li>
-                     <li>Скопировать полученный URL и вставить его в файл <code>config.json</code> (В поле <code>googleScriptUrl</code>).</li>
-                 </ol>
-             </div>
-         </div>
+      <div class="modal-content" style="max-width: 800px">
+        <span class="close-btn" id="closeSetupBtn">&times;</span>
+        <h2>Инструкция по настройке Google Sheets 🗂️</h2>
+        <div class="instruction-box">
+          <p>
+            API не настроено в файле конфигурации. Сейчас приложение использует
+            <b>демо-данные ( Mock )</b>.
+          </p>
+          <p>Чтобы сайт начал сохранять данные в Google Таблицы, необходимо:</p>
+          <ol>
+            <li>
+              Создать Google Таблицу и назвать новую вкладку
+              <code>Участники</code> и еще одну <code>Победители</code>.
+            </li>
+            <li>
+              В верхнем меню выбрать:
+              <strong>Расширения -> Apps Script</strong>.
+            </li>
+            <li>
+              Скопировать код из файла <code>google_apps_script.js</code> (он
+              сгенерирован для вас) и вставить в редактор.
+            </li>
+            <li>
+              Нажать кнопку
+              <strong>Начать развертывание -> Новое развертывание</strong>.
+            </li>
+            <li>
+              Выбрать тип: <strong>Веб-приложение</strong>. В доступе указать
+              <strong>"Все"</strong>.
+            </li>
+            <li>
+              Скопировать полученный URL и вставить его в файл
+              <code>config.json</code> (В поле <code>googleScriptUrl</code>).
+            </li>
+          </ol>
+        </div>
+      </div>
     </div>
 
+    <!-- Подключаем библиотеки -->
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/l10n/ru.js"></script>
     <!-- Подключаем основной скрипт -->
     <script type="module" src="script.js"></script>
-</body>
+  </body>
 </html>

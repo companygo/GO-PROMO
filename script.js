@@ -11,6 +11,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let adminToken = null; // Токен авторизации
   let currentWinnersCount = 0;
   let displayedParticipants = 0;
+  let checkDatePicker = null;
   const PAGE_SIZE = 20;
 
   // DOM-элементы (Секции)
@@ -42,7 +43,12 @@ document.addEventListener("DOMContentLoaded", async () => {
           config.startDate = parsed.startDate;
           config.endDate = parsed.endDate;
           config.drawDate = parsed.drawDate;
-          config.registrationEnabled = parsed.registrationEnabled === "true" || parsed.registrationEnabled === true;
+          config.registrationEnabled =
+            parsed.registrationEnabled === "true" ||
+            parsed.registrationEnabled === true;
+          config.winnersPublished =
+            parsed.winnersPublished === "true" ||
+            parsed.winnersPublished === true;
         } catch (e) {
           console.error("Ошибка при чтении локальных настроек:", e);
         }
@@ -59,26 +65,42 @@ document.addEventListener("DOMContentLoaded", async () => {
         config.startDate = data.settings.startDate;
         config.endDate = data.settings.endDate;
         config.drawDate = data.settings.drawDate;
-        config.registrationEnabled = data.settings.registrationEnabled === "true" || data.settings.registrationEnabled === true;
+        config.registrationEnabled =
+          data.settings.registrationEnabled === "true" ||
+          data.settings.registrationEnabled === true;
+        config.winnersPublished =
+          data.settings.winnersPublished === "true" ||
+          data.settings.winnersPublished === true;
       }
     } catch (err) {
-      console.warn("Ошибка при получении настроек с сервера. Используем локальный конфигурационный файл.", err);
+      console.warn(
+        "Ошибка при получении настроек с сервера. Используем локальный конфигурационный файл.",
+        err,
+      );
     }
   }
 
   // 1. Инициализация (Загрузка конфигурации)
   try {
-    const res = await fetch("config.json?v=" + Date.now());
+    const fetchUrl = "config.json?v=" + Date.now();
+    const res = await fetch(fetchUrl);
+    if (!res.ok) {
+      throw new Error(`Статус ответа: ${res.status}`);
+    }
     config = await res.json();
     useMock = !config.googleScriptUrl || config.googleScriptUrl.trim() === "";
-    
+
     // Загружаем динамические настройки из Google Sheets / LocalStorage
     await loadSettings();
-    
+
+    // Обновляем тексты и инициализируем календарь
+    updateDynamicDateTexts();
+    initDatePicker();
+
     checkRegistrationPeriod();
   } catch (err) {
-    console.error("ОШИБКА: Не удалось загрузить config.json", err);
-    useMock = true; // Fallback на демо-режим при явной ошибке
+    console.error("ОШИБКА: Не удалось загрузить конфигурационный файл. Проверьте config.json.", err);
+    useMock = true; // Fallback на демо-режим при явной проблеме
   }
 
   function checkRegistrationPeriod() {
@@ -93,7 +115,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       btn.style.cursor = "not-allowed";
       btn.textContent = "Регистрация закрыта";
       if (msg) {
-        msg.textContent = "Регистрация временно приостановлена администратором.";
+        msg.textContent =
+          "Регистрация временно приостановлена администратором.";
         msg.className = "message error";
       }
       return false;
@@ -109,7 +132,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.style.cursor = "not-allowed";
         btn.textContent = "Регистрация еще не началась";
         if (msg) {
-          msg.textContent = `Регистрация чеков начнется ${start.toLocaleDateString("ru-RU", { day: 'numeric', month: 'long', year: 'numeric' })} в ${start.toLocaleTimeString("ru-RU", { hour: '2-digit', minute: '2-digit' })}.`;
+          msg.textContent = `Регистрация чеков начнется ${start.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })} в ${start.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}.`;
           msg.className = "message info";
         }
         return false;
@@ -124,7 +147,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         btn.style.cursor = "not-allowed";
         btn.textContent = "Регистрация завершена";
         if (msg) {
-          msg.textContent = `Регистрация чеков завершена ${end.toLocaleDateString("ru-RU", { day: 'numeric', month: 'long', year: 'numeric' })} в ${end.toLocaleTimeString("ru-RU", { hour: '2-digit', minute: '2-digit' })}.`;
+          msg.textContent = `Регистрация чеков завершена ${end.toLocaleDateString("ru-RU", { day: "numeric", month: "long", year: "numeric" })} в ${end.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" })}.`;
           msg.className = "message error";
         }
         return false;
@@ -140,6 +163,66 @@ document.addEventListener("DOMContentLoaded", async () => {
       msg.className = "message";
     }
     return true;
+  }
+
+  /**
+   * Обновляет текстовые описания периода акции на главной странице
+   */
+  function updateDynamicDateTexts() {
+    const regText = document.getElementById("registrationPeriodText");
+    const drawText = document.getElementById("drawDateText");
+
+    if (config.startDate && config.endDate && regText) {
+      const start = new Date(config.startDate);
+      const end = new Date(config.endDate);
+      
+      const options = { day: 'numeric', month: 'long', year: 'numeric' };
+      const startStr = start.toLocaleDateString('ru-RU', { day: 'numeric' });
+      const endStr = end.toLocaleDateString('ru-RU', options);
+      
+      // Если один и тот же месяц и год
+      if (start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear()) {
+         regText.textContent = `с ${start.getDate()} по ${endStr}`;
+      } else {
+         regText.textContent = `с ${start.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })} по ${endStr}`;
+      }
+    }
+
+    if (config.drawDate && drawText) {
+      const draw = new Date(config.drawDate);
+      drawText.textContent = draw.toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' });
+    }
+  }
+
+  /**
+   * Инициализация или обновление календаря выбора даты чека с учетом настроек
+   */
+  function initDatePicker() {
+    if (typeof flatpickr === "undefined" || !document.getElementById("checkDate")) return;
+
+    const op = {
+      enableTime: false,
+      dateFormat: "Y-m-d",
+      altInput: true,
+      altFormat: "d.m.Y",
+      locale: "ru",
+      disableMobile: true,
+    };
+
+    // Динамические ограничения
+    if (config.startDate) {
+      const d = new Date(config.startDate);
+      if (!isNaN(d.getTime())) op.minDate = d;
+    }
+    if (config.endDate) {
+      const d = new Date(config.endDate);
+      if (!isNaN(d.getTime())) op.maxDate = d;
+    }
+
+    if (checkDatePicker) {
+      checkDatePicker.destroy();
+    }
+    checkDatePicker = flatpickr("#checkDate", op);
   }
 
   // ---- ЛОГИКА ОТСЧЕТА ВРЕМЕНИ ----
@@ -194,26 +277,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   updateCountdown();
   countdownInterval = setInterval(updateCountdown, 1000);
-
-  if (useMock) {
-    console.warn(
-      "API URL от Google Sheets не настроен. Используются локальные демо-данные.",
-    );
-    // Генерируем фейковые данные участников для возможности тестирования админки
-    for (let i = 1; i <= 65; i++) {
-      participants.push({
-        receipt: "100" + Math.floor(1000 + Math.random() * 9000),
-        name: "Демо Участник " + i,
-        phone: "+373 " + Math.floor(10000000 + Math.random() * 90000000),
-        date: new Date(
-          Date.now() - Math.random() * 10000000000,
-        ).toLocaleDateString(),
-        won: false,
-      });
-    }
-    // Показываем инструкцию администратору
-    setupModal.classList.remove("hidden");
-  }
 
   // ---- ОБРАБОТЧИКИ СОБЫТИЙ ----
 
@@ -314,6 +377,67 @@ document.addEventListener("DOMContentLoaded", async () => {
     loadWinners();
   });
 
+  // Инициализация и авто-коррекция ввода номера телефона (только 8 цифр)
+  const phoneInput = document.getElementById("phone");
+  if (phoneInput) {
+    phoneInput.addEventListener("input", () => {
+      let value = phoneInput.value;
+      // Очищаем от любых не-цифр
+      let digits = value.replace(/\D/g, "");
+      // Если по привычке ввели/скопировали с префиксом 373, убираем его
+      if (digits.startsWith("373")) {
+        digits = digits.substring(3);
+      }
+      // Ограничение ровно до 8 цифр
+      if (digits.length > 8) {
+        digits = digits.substring(0, 8);
+      }
+      phoneInput.value = digits;
+    });
+  }
+
+
+  function normalizeTime(timeStr) {
+    let cleaned = timeStr.trim();
+    // Если это просто 4 цифры без разделителей, например "1430"
+    if (/^\d{4}$/.test(cleaned)) {
+      const h = parseInt(cleaned.substring(0, 2), 10);
+      const m = parseInt(cleaned.substring(2, 4), 10);
+      if (h >= 0 && h < 24 && m >= 0 && m < 60) {
+        return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+      }
+    }
+
+    let parts = cleaned.split(/[:\.\s\-]+/);
+    let hoursStr = "12";
+    let minutesStr = "00";
+    if (parts.length >= 1) {
+      const h = parseInt(parts[0], 10);
+      if (!isNaN(h) && h >= 0 && h < 24) {
+        hoursStr = String(h).padStart(2, "0");
+      }
+    }
+    if (parts.length >= 2) {
+      const m = parseInt(parts[1], 10);
+      if (!isNaN(m) && m >= 0 && m < 60) {
+        minutesStr = String(m).padStart(2, "0");
+      }
+    }
+    return `${hoursStr}:${minutesStr}`;
+  }
+
+  if (promoForm) {
+    promoForm.addEventListener("reset", () => {
+      if (checkDatePicker) {
+        checkDatePicker.clear();
+      }
+      const timeOnlyInput = document.getElementById("checkTimeOnly");
+      if (timeOnlyInput) {
+        timeOnlyInput.value = "";
+      }
+    });
+  }
+
   // Регистрация чека
   promoForm.addEventListener("submit", async (e) => {
     e.preventDefault();
@@ -327,17 +451,62 @@ document.addEventListener("DOMContentLoaded", async () => {
     const receipt = document.getElementById("receipt").value.trim();
     const name = document.getElementById("name").value.trim();
     const phoneInput = document.getElementById("phone").value.trim();
+    const checkDateVal = document.getElementById("checkDate")
+      ? document.getElementById("checkDate").value.trim()
+      : "";
+    const checkTimeOnlyVal = document.getElementById("checkTimeOnly")
+      ? document.getElementById("checkTimeOnly").value.trim()
+      : "";
+    const amountVal = parseFloat(document.getElementById("amount").value);
 
     // Ограничение длины имени
     if (name.length < 2 || name.length > 100) {
-      msg.textContent = "Имя должно быть длиной от 2 до 100 символов.";
+      msg.textContent = "ФИО должно быть длиной от 2 до 100 символов.";
       msg.className = "message error";
       return;
     }
 
-    // Проверка номера ФД
-    if (!/^000081\d{6}$/.test(receipt)) {
-      msg.textContent = "Неверный номер чека";
+    // Фискальный код: требуем начало 000081 и длину ровно 12 цифр
+    if (!receipt.startsWith("000081") || !/^\d{12}$/.test(receipt)) {
+      msg.textContent = "Неправильный код чека";
+      msg.className = "message error";
+      return;
+    }
+
+    // Проверка суммы покупки
+    if (isNaN(amountVal) || amountVal < 1500) {
+      msg.textContent =
+        "Минимальная сумма покупки для участия в акции — 1500 рублей.";
+      msg.className = "message error";
+      return;
+    }
+
+    // Проверка даты чека
+    if (!checkDateVal) {
+      msg.textContent =
+        "Пожалуйста, выберите дату проведения покупки в календаре.";
+      msg.className = "message error";
+      return;
+    }
+    if (!checkTimeOnlyVal) {
+      msg.textContent = "Пожалуйста, введите время формирования чека вручную.";
+      msg.className = "message error";
+      return;
+    }
+
+    const checkTime = `${checkDateVal}T${normalizeTime(checkTimeOnlyVal)}`;
+    const checkDate = new Date(checkTime);
+    
+    // Используем динамические даты из конфига. Если они не загружены, используем максимально широкий диапазон.
+    const minStart = config.startDate ? new Date(config.startDate) : new Date(0);
+    const maxEnd = config.endDate ? new Date(config.endDate) : new Date(8640000000000000);
+    
+    if (
+      isNaN(checkDate.getTime()) ||
+      checkDate < minStart ||
+      checkDate > maxEnd
+    ) {
+      msg.textContent = "Разрешены только чеки в период акции.";
       msg.className = "message error";
       return;
     }
@@ -349,7 +518,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (!/^\d{8}$/.test(normalizedPhone)) {
-      msg.textContent = "Пожалуйста, введите корректный номер телефона (должен состоять ровно из 8 цифр, например, 77712345).";
+      msg.textContent =
+        "Пожалуйста, введите корректный номер телефона (должен состоять ровно из 8 цифр, например, 77712345).";
       msg.className = "message error";
       return;
     }
@@ -372,7 +542,9 @@ document.addEventListener("DOMContentLoaded", async () => {
           receipt,
           name,
           phone: normalizedPhone,
-          date: new Date().toLocaleDateString(),
+          checkTime,
+          amount: amountVal,
+          date: new Date().toISOString(),
           won: false,
         });
 
@@ -381,7 +553,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         promoForm.reset();
       } else {
         // БОЕВОЙ РЕЖИМ: Отправка данных в Google Apps Script
-        const payload = { action: "register", receipt, name, phone: normalizedPhone };
+        const payload = {
+          action: "register",
+          receipt,
+          name,
+          phone: normalizedPhone,
+          checkTime,
+          amount: amountVal,
+        };
 
         const res = await fetch(config.googleScriptUrl, {
           method: "POST",
@@ -437,6 +616,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  const PRIZES = [
+    "1. Смартфон Redmi Note 15 Pro Plus 5G 8/256",
+    "2. Матрас туристический Youpin One Night Automatic Inflatable Leisure Bed PS1",
+    "3. Видеорегистратор HOCO DV8 with rear camera",
+    "4. Наушники Baseus Bluetooth BH1 NC Black",
+    "5. Часы Xiaomi Redmi Watch 5 Active",
+    "6. Колонка Blackview Bluetooth Aurabass 3",
+    "7. Весы Xiaomi Mi Body Composition Scale S400",
+    "8. Наушники Redmi Buds 6 Play",
+    "9. Ночник Cute Panda",
+    "10. Наушники Xiaomi Headphones Basic",
+  ];
+
+  function resolvePrizeName(prizeValue) {
+    if (!prizeValue) return "";
+    const num = parseInt(prizeValue, 10);
+    if (!isNaN(num) && num >= 1 && num <= PRIZES.length) {
+      return PRIZES[num - 1]; // Already includes ID
+    }
+    return String(prizeValue);
+  }
+
   // Функция экранирования HTML для предотвращения XSS
   function escapeHTML(str) {
     if (!str) return "";
@@ -464,7 +665,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       .replace(",", "");
   }
 
-  // Загрузка Победителей на главной странице
+  // Вспомогательная функция для надежного сравнения чеков (очищает от пробелов и кавычек)
+  const cleanR = (r) => {
+    if (r === undefined || r === null) return "";
+    let s = String(r).trim().replace(/^'/, "");
+    return s;
+  };
+
   async function loadWinners() {
     const list = document.getElementById("winnersList");
     try {
@@ -472,22 +679,51 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (useMock) {
         data = winners;
       } else {
-        // БОЕВОЙ РЕЖИМ: Запрашиваем победителей из Google Sheets
-        const url = new URL(config.googleScriptUrl);
-        url.searchParams.append("action", "winners");
-        const res = await fetch(url.toString());
-        const text = await res.text();
+        // БОЕВОЙ РЕЖИМ: Пробуем запросить через POST
+        const res = await fetch(config.googleScriptUrl, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "winners", token: adminToken }),
+        });
+        let text = await res.text();
+        let json = null;
         try {
-          const json = JSON.parse(text);
-          if (json.success) {
-            data = json.winners || [];
-            winners = data;
-          } else {
-            data = [];
-            winners = [];
-          }
+          json = JSON.parse(text);
         } catch (e) {
-          console.warn("GAS не вернул JSON. Ответ сервера:", text);
+          console.warn("GAS не вернул JSON (POST). Ответ сервера:", text);
+        }
+
+        // Запасной план: если сервер старый и не знает команду winners через POST,
+        // он возвращает success: false или вообще ошибку. Пробуем старым GET методом.
+        if (
+          !json ||
+          (!json.success &&
+            json.message &&
+            json.message.includes("Неизвестное"))
+        ) {
+          console.log(
+            "POST action 'winners' не найден на сервере, пробуем GET...",
+          );
+          const url = new URL(config.googleScriptUrl);
+          url.searchParams.append("action", "winners");
+          if (adminToken) url.searchParams.append("token", adminToken);
+          const getRes = await fetch(url.toString());
+          text = await getRes.text();
+          try {
+            json = JSON.parse(text);
+          } catch (e) {
+            console.warn("GAS не вернул JSON (GET). Ответ сервера:", text);
+          }
+        }
+
+        if (json && json.success) {
+          data = json.winners || [];
+          winners = data;
+        } else {
+          console.warn(
+            "Не удалось загрузить таблицу победителей:",
+            json ? json.message : text,
+          );
           data = [];
           winners = [];
         }
@@ -505,7 +741,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       // Отрисовка карточек победителей
-      data.forEach((w) => {
+      const sortedWinners = [...data].sort((a, b) => {
+        const pA = parseInt(a.prize, 10) || 999;
+        const pB = parseInt(b.prize, 10) || 999;
+        return pA - pB;
+      });
+
+      sortedWinners.forEach((w, idx) => {
         const card = document.createElement("div");
         card.className = "winner-card";
 
@@ -519,8 +761,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             : "***";
 
         card.innerHTML = `
-                    <h4>${escapeHTML(w.name)}</h4>
-                    <div class="receipt">Чек: ${escapeHTML(masked)}</div>
+                    <h4>🎉 Победитель №${w.prize || idx + 1}</h4>
+                    <div class="receipt">${escapeHTML(masked)}</div>
+                    ${w.prize ? `<div class="prize-info" style="color:var(--primary); font-weight:bold; margin-top: 5px; font-size:0.95rem;">${escapeHTML(resolvePrizeName(w.prize))}</div>` : ""}
                     <div class="date"><small>Дата розыгрыша: ${escapeHTML(formatDate(w.date))}</small></div>
                 `;
         list.appendChild(card);
@@ -538,7 +781,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     displayedParticipants = 0;
     document.getElementById("participantsBody").innerHTML = `
       <tr>
-        <td colspan="5" style="text-align: center; padding: 40px; color: var(--text-muted, #888);">
+        <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted, #888);">
           <div class="loader-spinner" style="display: inline-block; width: 22px; height: 22px; border: 2.5px solid #333; border-top-color: var(--primary, #00a658); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 12px; vertical-align: middle;"></div>
           Загрузка участников...
         </td>
@@ -555,15 +798,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       // Выгружаем победителей и участников параллельно для ускорения входа
       const [_, res] = await Promise.all([
-        loadWinners().catch(err => console.error("Ошибка загрузки победителей:", err)),
+        loadWinners().catch((err) =>
+          console.error("Ошибка загрузки победителей:", err),
+        ),
         fetch(config.googleScriptUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
           body: JSON.stringify({ action: "participants", token: adminToken }),
-        }).then(r => r.json()).catch(err => {
-          console.error("Ошибка загрузки участников:", err);
-          return { success: false };
         })
+          .then((r) => r.json())
+          .catch((err) => {
+            console.error("Ошибка загрузки участников:", err);
+            return { success: false };
+          }),
       ]);
 
       if (res && res.success) {
@@ -571,6 +818,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (err) {
       console.error("Ошибка при загрузке данных админки:", err);
+    }
+
+    // Проверка рассинхронизации: участники выигрывали, но бэкенд не вернул победителей
+    // Это индикатор использования устаревшего развертывания Google Apps Script
+    const hasSyncError =
+      participants.some((p) => p.won) && winners.length === 0;
+    const errEl = document.getElementById("adminSyncError");
+    if (errEl) {
+      if (hasSyncError && !useMock) {
+        errEl.style.display = "block";
+      } else {
+        errEl.style.display = "none";
+      }
     }
 
     renderAdminStats();
@@ -581,6 +841,64 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("statTotalParticipants").textContent =
       participants.length;
     document.getElementById("statTotalWinners").textContent = winners.length;
+    renderPrizeStatus(winners);
+  }
+
+  function renderPrizeStatus(currentWinners) {
+    const list = document.getElementById("prizeStatusList");
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    PRIZES.forEach((prizeName, index) => {
+      const prizeId = index + 1;
+      // Correct identification logic:
+      const winner = currentWinners.find((w) => {
+        const prizeVal = String(w.prize).trim();
+        if (!prizeVal) return false;
+
+        // 1. Match by strict ID string
+        if (prizeVal === String(prizeId)) return true;
+
+        // 2. Match by exact PRIZES array item or name without prefix
+        const nameWithoutPrefix = prizeName.replace(/^\d+\.\s+/, "");
+        if (prizeVal === prizeName || prizeVal === nameWithoutPrefix)
+          return true;
+
+        return false;
+      });
+
+      const taken = !!winner;
+
+      const item = document.createElement("div");
+      item.style.padding = "15px";
+      item.style.borderRadius = "8px";
+      item.style.backgroundColor = taken ? "#552222" : "#224422";
+      item.style.border = `1px solid ${taken ? "#ff6b6b" : "#51cf66"}`;
+      item.style.display = "flex";
+      item.style.flexDirection = "column";
+      item.style.gap = "8px";
+
+      item.innerHTML = `
+            <div style="font-weight: bold; font-size: 0.95rem; color: #fff;">${prizeName}</div>
+            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                <div style="font-size: 0.9rem; font-weight: 600; color: ${taken ? "#ff6b6b" : "#51cf66"};">
+                    ${taken ? "🔴 Разыгран" : "🟢 В наличии"}
+                </div>
+                ${
+                  taken
+                    ? `
+                    <div style="font-size: 0.85rem; color: #aaa;">
+                        <div>Чек: ${winner.receipt}</div>
+                        <div>Дата: ${formatDate(winner.date)}</div>
+                    </div>
+                `
+                    : ""
+                }
+            </div>
+        `;
+      list.appendChild(item);
+    });
   }
 
   // Отрисовка таблицы с пагинацией (по кнопке "Показать еще")
@@ -590,10 +908,19 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Сортировка: победители всегда в самом верху списка (без порчи исходного массива)
     const sorted = [...list].sort((a, b) => {
-      const aWon = !!a.won;
-      const bWon = !!b.won;
-      if (aWon && !bWon) return -1;
-      if (!aWon && bWon) return 1;
+      const aWinner = winners.find((w) => cleanR(w.receipt) === cleanR(a.receipt));
+      const bWinner = winners.find((w) => cleanR(w.receipt) === cleanR(b.receipt));
+      const aIsWinner = !!aWinner || !!a.won;
+      const bIsWinner = !!bWinner || !!b.won;
+
+      if (aIsWinner && !bIsWinner) return -1;
+      if (!aIsWinner && bIsWinner) return 1;
+      
+      if (aIsWinner && bIsWinner) {
+        const prizeA = aWinner && !isNaN(parseInt(aWinner.prize, 10)) ? parseInt(aWinner.prize, 10) : 999;
+        const prizeB = bWinner && !isNaN(parseInt(bWinner.prize, 10)) ? parseInt(bWinner.prize, 10) : 999;
+        return prizeA - prizeB; // от 1 к 10
+      }
       return 0;
     });
 
@@ -627,17 +954,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     const tbody = document.getElementById("participantsBody");
     items.forEach((p) => {
       const tr = document.createElement("tr");
-      if (p.won) tr.style.backgroundColor = "rgba(46, 204, 113, 0.05)"; // Подсветка победителя
+
+      const found = winners.find(
+        (w) => cleanR(w.receipt) === cleanR(p.receipt),
+      );
+      const isWinner = !!found || !!p.won;
+
+      if (isWinner) tr.style.backgroundColor = "rgba(25, 163, 105, 0.05)"; // Подсветка победителя (новый фирменный зеленый)
+
+      const checkTimeStr = p.checkTime ? formatDate(p.checkTime) : "—";
+      const amountStr =
+        p.amount && !isNaN(parseFloat(p.amount))
+          ? p.amount + " руб."
+          : p.amount || "—";
+
+      let prizeStr = "";
+      let prizeIndexFormatted = "";
+
+      // Используем список победителей, чтобы точно определить статус и приз
+      if (isWinner) {
+        if (found && found.prize) {
+          prizeIndexFormatted = found.prize;
+          const resolved = resolvePrizeName(found.prize);
+          prizeStr = resolved;
+        } else {
+          // Если участник помечен как победитель, но в таблице "Победители" его нет (или данные рассинхронизированы)
+          prizeStr =
+            "Приз уточняется (Данные отсутствуют в таблице Победители)";
+        }
+      }
+
       tr.innerHTML = `
                 <td><strong>${escapeHTML(p.receipt)}</strong></td>
                 <td>${escapeHTML(p.name)}</td>
                 <td>${escapeHTML(p.phone)}</td>
+                <td>${escapeHTML(checkTimeStr)}</td>
+                <td>${escapeHTML(amountStr)}</td>
                 <td>${escapeHTML(formatDate(p.date))}</td>
                 <td>
-                  ${p.won ? `
-                    <span style="color:#2ecc71;font-weight:bold;margin-right:10px;">Победитель</span>
+                  ${
+                    isWinner
+                      ? `
+                    <div style="color:var(--primary);font-weight:bold;margin-bottom:4px;">Победитель ${prizeIndexFormatted ? `(Приз №${prizeIndexFormatted})` : ""}</div>
+                    ${prizeStr ? `<div style="font-size:0.85rem;color:#333;margin-bottom:6px;">${escapeHTML(prizeStr)}</div>` : ""}
                     <button class="btn remove-winner-btn" data-receipt="${escapeHTML(p.receipt)}" style="padding: 4px 8px; font-size: 0.8rem; background-color: var(--error, #e74c3c); color: white; border: none; border-radius: 4px; cursor: pointer;">Сбросить победу</button>
-                  ` : `<span style="color:#999;font-size:0.9rem;">Участник</span>`}
+                  `
+                      : `<span style="color:#999;font-size:0.9rem;">Участник</span>`
+                  }
                 </td>
             `;
       tbody.appendChild(tr);
@@ -793,35 +1156,45 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
 
-    const confirmed = await window.showConfirmDialog(`Вы действительно хотите аннулировать победу по чеку № ${receipt}?`);
+    const confirmed = await window.showConfirmDialog(
+      `Вы действительно хотите аннулировать победу по чеку № ${receipt}?`,
+    );
     if (!confirmed) {
       return;
     }
-    
+
     if (btn) {
       btn.disabled = true;
       btn.textContent = "Удаление...";
     }
-    
+
     try {
       if (useMock) {
         // Имитация в Демо-режиме
         await new Promise((r) => setTimeout(r, 500));
-        
-        // Удалить из winners
-        winners = winners.filter(w => String(w.receipt).trim() !== String(receipt).trim());
-        
+
+        winners = winners.filter((w) => cleanR(w.receipt) !== cleanR(receipt));
+
         // Сбросить статус won у оригинального участника
-        const p = participants.find(part => String(part.receipt).trim() === String(receipt).trim());
+        const p = participants.find(
+          (part) => cleanR(part.receipt) === cleanR(receipt),
+        );
         if (p) {
           p.won = false;
         }
-        
-        await window.showAlertDialog("Победитель успешно удален (демо-режим).", true);
+
+        await window.showAlertDialog(
+          "Победитель успешно удален (демо-режим).",
+          true,
+        );
         await loadAdminData();
       } else {
         // Реальный режим
-        const payload = { action: "removeWinner", token: adminToken, receipt: receipt };
+        const payload = {
+          action: "removeWinner",
+          token: adminToken,
+          receipt: receipt,
+        };
         const res = await fetch(config.googleScriptUrl, {
           method: "POST",
           headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -829,10 +1202,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         });
         const json = await res.json();
         if (json.success) {
-          await window.showAlertDialog(json.message || "Победитель успешно удален.", true);
+          await window.showAlertDialog(
+            json.message || "Победитель успешно удален.",
+            true,
+          );
           await loadAdminData();
         } else {
-          await window.showAlertDialog("Ошибка: " + (json.message || "Не удалось удалить победителя"), false);
+          await window.showAlertDialog(
+            "Ошибка: " + (json.message || "Не удалось удалить победителя"),
+            false,
+          );
           if (btn) {
             btn.disabled = false;
             btn.textContent = "Сбросить победу";
@@ -841,7 +1220,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
     } catch (err) {
       console.error("Error removing winner:", err);
-      await window.showAlertDialog("Произошла ошибка при связи с сервером.", false);
+      await window.showAlertDialog(
+        "Произошла ошибка при связи с сервером.",
+        false,
+      );
       if (btn) {
         btn.disabled = false;
         btn.textContent = "Сбросить победу";
@@ -868,9 +1250,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const query = e.target.value.toLowerCase().trim();
     const filtered = participants.filter(
       (p) =>
-        String(p.receipt || "").toLowerCase().includes(query) ||
-        String(p.name || "").toLowerCase().includes(query) ||
-        String(p.phone || "").toLowerCase().includes(query),
+        String(p.receipt || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(p.name || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(p.phone || "")
+          .toLowerCase()
+          .includes(query) ||
+        String(p.amount || "")
+          .toLowerCase()
+          .includes(query),
     );
     document.getElementById("participantsBody").innerHTML = "";
     renderParticipants(filtered);
@@ -884,7 +1275,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const btn = document.getElementById("drawWinnerBtn");
 
       function showWinnerMessage(winner) {
-        msg.innerHTML = `🎉 Победитель выбран!<br><strong style="font-size:1.2rem">${escapeHTML(winner.name)} (Чек: ${escapeHTML(winner.receipt)})</strong><br>Телефон: ${escapeHTML(winner.phone)}`;
+        msg.innerHTML = `🎉 Победитель выбран!<br><strong style="font-size:1.2rem">${escapeHTML(winner.name)} (Чек: ${escapeHTML(winner.receipt)})</strong><br>Телефон: ${escapeHTML(winner.phone)}<br><div style="margin-top: 5px; color: var(--primary); font-weight: bold;">${escapeHTML(resolvePrizeName(winner.prize) || "Главный приз")}</div>`;
         msg.className = "message success";
         msg.style.opacity = "1";
         msg.style.transition = "";
@@ -896,7 +1287,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         window.winnerHideTimeout = setTimeout(() => {
           msg.style.transition = "opacity 1s ease";
           msg.style.opacity = "0";
-          
+
           window.winnerHideTimeout = setTimeout(() => {
             msg.textContent = "";
             msg.className = "message";
@@ -908,8 +1299,31 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       if (!useMock) {
         btn.disabled = true;
-        msg.className = "message";
-        msg.textContent = "Идет розыгрыш...";
+        msg.className = "message info";
+        msg.style.opacity = "1";
+        msg.style.color = "";
+
+        // Барабанная дробь в реальном времени: крутим случайных кандидатов (не победителей)
+        const candidates = participants.filter((p) => !p.won);
+        let spinInterval;
+
+        if (candidates.length > 0) {
+          spinInterval = setInterval(() => {
+            const rand = candidates[Math.floor(Math.random() * candidates.length)];
+            msg.innerHTML = `
+              <div style="font-size: 1.1rem; margin-bottom: 5px;">🎰 <strong>Вращение барабана...</strong></div>
+              <div style="font-family: monospace; font-size: 1.3rem; color: var(--primary); letter-spacing: 2px;">
+                ${escapeHTML(rand.receipt)}
+              </div>
+              <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">
+                ${escapeHTML(rand.name)}
+              </div>
+            `;
+          }, 80);
+        } else {
+          msg.innerHTML = "<strong>Подготовка к розыгрышу...</strong>";
+        }
+
         try {
           const payload = { action: "drawWinner", token: adminToken };
           const res = await fetch(config.googleScriptUrl, {
@@ -919,18 +1333,19 @@ document.addEventListener("DOMContentLoaded", async () => {
           });
           const responseData = await res.json();
 
-          if (!responseData.success) {
-            msg.textContent = responseData.message || "Ошибка розыгрыша";
-            msg.className = "message error";
-          } else {
-            const winner = responseData.winner;
-            showWinnerMessage(winner);
+          if (spinInterval) clearInterval(spinInterval);
 
+          if (responseData.success) {
+            showWinnerMessage(responseData.winner);
             // Обновляем списки
             await loadAdminData();
             await loadWinners();
+          } else {
+            msg.textContent = responseData.message || "Ошибка розыгрыша";
+            msg.className = "message error";
           }
         } catch (e) {
+          if (spinInterval) clearInterval(spinInterval);
           msg.textContent = "Ошибка соединения. Попробуйте позже.";
           msg.className = "message error";
         } finally {
@@ -950,15 +1365,24 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
 
       btn.disabled = true;
-      msg.className = "message";
+      msg.className = "message info";
+      msg.style.opacity = "1";
       let count = 0;
 
       // Визуальная анимация выбора ("барабан")
       let interval = setInterval(() => {
         let rand = eligible[Math.floor(Math.random() * eligible.length)];
-        msg.textContent = "Вращение барабана... " + rand.receipt;
+        msg.innerHTML = `
+          <div style="font-size: 1.1rem; margin-bottom: 5px;">🎰 <strong>Вращение барабана...</strong> (Демо)</div>
+          <div style="font-family: monospace; font-size: 1.3rem; color: var(--primary); letter-spacing: 2px;">
+            ${escapeHTML(rand.receipt)}
+          </div>
+          <div style="font-size: 0.9rem; opacity: 0.8; margin-top: 5px;">
+            ${escapeHTML(rand.name)}
+          </div>
+        `;
         count++;
-        if (count > 15) {
+        if (count > 25) {
           clearInterval(interval);
           finishDraw();
         }
@@ -969,13 +1393,44 @@ document.addEventListener("DOMContentLoaded", async () => {
         const winnerIndex = Math.floor(Math.random() * eligible.length);
         const winner = eligible[winnerIndex];
 
+        const PRIZES = [
+          "Смартфон Redmi Note 15 Pro Plus 5G 8/256",
+          "Матрас туристический Youpin One Night Automatic Inflatable Leisure Bed PS1",
+          "Видеорегистратор HOCO DV8 with rear camera",
+          "Наушники Baseus Bluetooth BH1 NC Black",
+          "Часы Xiaomi Redmi Watch 5 Active",
+          "Колонка Blackview Aurabass 3",
+          "Весы Xiaomi Mi Body Composition Scale S400",
+          "Наушники Redmi Buds 6 Play",
+          "Ночник Cute Panda",
+          "Наушники Xiaomi Headphones Basic",
+        ];
+
+        const currentWinnersCount = winners.length;
+        if (currentWinnersCount >= PRIZES.length) {
+          msg.textContent = "Все главные призы (10 мест) уже разыграны!";
+          msg.className = "message error";
+          btn.disabled = false;
+          return;
+        }
+        const usedPrizes = winners.map((w) => parseInt(w.prize, 10));
+        let prizeIndex = -1;
+        for (let i = PRIZES.length; i >= 1; i--) {
+          if (!usedPrizes.includes(i)) {
+            prizeIndex = i;
+            break;
+          }
+        }
+
         // В демо-режиме: Обновляем локальные данные
         winner.won = true;
+        winner.prize = prizeIndex;
         const winRecord = {
           receipt: winner.receipt,
           name: winner.name,
           phone: winner.phone,
-          date: new Date().toLocaleDateString(),
+          prize: prizeIndex,
+          date: new Date().toISOString(),
         };
         winners.push(winRecord);
 
@@ -1005,7 +1460,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   // ---- ЛОГИКА ВКЛАДОК ПАНЕЛИ АДМИНИСТРАТОРА ----
   const tabParticipants = document.getElementById("tabParticipants");
   const tabSettings = document.getElementById("tabSettings");
-  const participantsTabContent = document.getElementById("participantsTabContent");
+  const participantsTabContent = document.getElementById(
+    "participantsTabContent",
+  );
   const settingsTabContent = document.getElementById("settingsTabContent");
 
   function fillSettingsInputs() {
@@ -1021,6 +1478,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     if (drawInput && config.drawDate) {
       drawInput.value = formatDateTimeLocal(config.drawDate);
+    }
+    const publishInput = document.getElementById("publishWinners");
+    if (publishInput) {
+      publishInput.checked = config.winnersPublished === true;
     }
 
     updateRegistrationStatusUI();
@@ -1055,22 +1516,24 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!dateStr) return "";
     const d = new Date(dateStr);
     if (isNaN(d.getTime())) return dateStr;
-    const pad = (num) => String(num).padStart(2, '0');
+    const pad = (num) => String(num).padStart(2, "0");
     return `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   }
 
   function parseUserDate(str) {
     if (!str) return null;
     str = str.trim();
-    
+
     // Check if it's already in YYYY-MM-DDTHH:mm:ss format
     if (/^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}/.test(str)) {
-      const d = new Date(str.replace(' ', 'T'));
-      if (!isNaN(d.getTime())) return str.replace(' ', 'T');
+      const d = new Date(str.replace(" ", "T"));
+      if (!isNaN(d.getTime())) return str.replace(" ", "T");
     }
-    
+
     // Check for DD.MM.YYYY HH:mm:ss or DD.MM.YYYY HH:mm or DD.MM.YYYY
-    let match = str.match(/^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/);
+    let match = str.match(
+      /^(\d{1,2})\.(\d{1,2})\.(\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::(\d{1,2}))?)?$/,
+    );
     if (match) {
       const day = parseInt(match[1], 10);
       const month = parseInt(match[2], 10) - 1;
@@ -1080,11 +1543,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       const sec = match[6] ? parseInt(match[6], 10) : 0;
       const date = new Date(year, month, day, hour, min, sec);
       if (!isNaN(date.getTime())) {
-        const pad = (num) => String(num).padStart(2, '0');
+        const pad = (num) => String(num).padStart(2, "0");
         return `${year}-${pad(month + 1)}-${pad(day)}T${pad(hour)}:${pad(min)}:${pad(sec)}`;
       }
     }
-    
+
     const fallback = new Date(str);
     if (!isNaN(fallback.getTime())) {
       return fallback.toISOString();
@@ -1097,7 +1560,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       tabParticipants.classList.add("active");
       tabParticipants.style.color = "var(--primary)";
       tabParticipants.style.borderBottom = "3px solid var(--primary)";
-      
+
       tabSettings.classList.remove("active");
       tabSettings.style.color = "var(--text-muted)";
       tabSettings.style.borderBottom = "none";
@@ -1110,7 +1573,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       tabSettings.classList.add("active");
       tabSettings.style.color = "var(--primary)";
       tabSettings.style.borderBottom = "3px solid var(--primary)";
-      
+
       tabParticipants.classList.remove("active");
       tabParticipants.style.color = "var(--text-muted)";
       tabParticipants.style.borderBottom = "none";
@@ -1126,7 +1589,8 @@ document.addEventListener("DOMContentLoaded", async () => {
   const toggleRegBtn = document.getElementById("toggleRegBtn");
   if (toggleRegBtn) {
     toggleRegBtn.addEventListener("click", () => {
-      config.registrationEnabled = config.registrationEnabled === false ? true : false;
+      config.registrationEnabled =
+        config.registrationEnabled === false ? true : false;
       updateRegistrationStatusUI();
     });
   }
@@ -1151,7 +1615,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const parsedDraw = parseUserDate(drawVal);
 
       if (!parsedStart || !parsedEnd || !parsedDraw) {
-        msg.textContent = "Неверный формат даты. Пожалуйста, используйте формат: ДД.ММ.ГГГГ ЧЧ:ММ (например: 30.06.2026 23:59)";
+        msg.textContent =
+          "Неверный формат даты. Пожалуйста, используйте формат: ДД.ММ.ГГГГ ЧЧ:ММ (например: 30.06.2026 23:59)";
         msg.className = "message error";
         return;
       }
@@ -1165,29 +1630,35 @@ document.addEventListener("DOMContentLoaded", async () => {
         startDate: parsedStart,
         endDate: parsedEnd,
         drawDate: parsedDraw,
-        registrationEnabled: config.registrationEnabled !== false
+        registrationEnabled: config.registrationEnabled !== false,
+        winnersPublished: document.getElementById("publishWinners").checked,
       };
 
       try {
         if (useMock) {
           await new Promise((r) => setTimeout(r, 600));
           localStorage.setItem("lottery_settings", JSON.stringify(newSettings));
-          config = { ...config, ...newSettings };
-          msg.textContent = "Настройки успешно сохранены (демо-режим).";
-          msg.className = "message success";
-          checkRegistrationPeriod();
-          fillSettingsInputs(); // Re-format beautifully
+            config = { ...config, ...newSettings };
+            msg.textContent = "Настройки успешно сохранены (демо-режим).";
+            msg.className = "message success";
+            
+            // Обновляем глобальное поведение
+            updateDynamicDateTexts();
+            initDatePicker();
+            checkRegistrationPeriod();
+            
+            fillSettingsInputs(); // Re-format beautifully
         } else {
           const payload = {
             action: "saveSettings",
             token: adminToken,
-            ...newSettings
+            ...newSettings,
           };
 
           const res = await fetch(config.googleScriptUrl, {
             method: "POST",
             headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify(payload)
+            body: JSON.stringify(payload),
           });
 
           const json = await res.json();
@@ -1195,7 +1666,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             config = { ...config, ...newSettings };
             msg.textContent = json.message || "Настройки успешно сохранены.";
             msg.className = "message success";
+            
+            // Обновляем глобальное поведение
+            updateDynamicDateTexts();
+            initDatePicker();
             checkRegistrationPeriod();
+            
             fillSettingsInputs(); // Re-format beautifully
           } else {
             msg.textContent = json.message || "Не удалось сохранить настройки.";

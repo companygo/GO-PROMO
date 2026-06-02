@@ -2,8 +2,8 @@
 
 /* Основные переменные для фирменного стиля: зеленый + темный */
 :root {
-    --primary: #00a658; /* Фирменный зеленый GO */
-    --primary-hover: #008c4a;
+    --primary: #19a369; /* Новый фирменный зеленый */
+    --primary-hover: #158b5a;
     --secondary: #1a1a1a;
     --bg-color: #121212;
     --text-color: #e0e0e0;
@@ -11,7 +11,7 @@
     --card-bg: #1e1e1e;
     --border-color: #333333;
     --error: #cf6679;
-    --success: #00a658;
+    --success: #19a369;
     --shadow: 0 4px 6px rgba(0,0,0,0.5);
     --shadow-hover: 0 10px 20px rgba(0, 166, 88, 0.2);
     --radius: 4px; /* GO uses somewhat sharper corners */
@@ -67,13 +67,15 @@ h1, h2, h3, h4, h5, h6 {
 
 .navbar-brand {
 display: block;
-width: 160px;
-height: 80px;
+width: 120px;
+height: 60px;
+margin-left: -80px;
 margin-right: 20px;
 background-image: url("./logo.png");
 background-repeat: no-repeat;
-background-position: center;
+background-position: left center;
 background-size: contain;
+transition: margin-left 0.3s ease;
 }
 
 /* ---- Кнопки ---- */
@@ -260,6 +262,36 @@ background-size: contain;
     transition: border-color 0.3s, box-shadow 0.3s;
 }
 
+.phone-input-group {
+    display: flex;
+    align-items: stretch;
+    width: 100%;
+}
+
+.phone-prefix {
+    background-color: #1a1a1a;
+    color: var(--primary);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    padding: 14px 20px;
+    border: 1px solid var(--border-color);
+    border-right: none;
+    border-top-left-radius: var(--radius);
+    border-bottom-left-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    font-size: 1.1rem;
+    min-width: 80px;
+}
+
+.phone-input-group input {
+    border-top-left-radius: 0 !important;
+    border-bottom-left-radius: 0 !important;
+    flex: 1;
+}
+
 .form-group input:focus {
     outline: none;
     border-color: var(--primary);
@@ -294,6 +326,13 @@ background-size: contain;
     background-color: rgba(231, 76, 60, 0.1);
     color: var(--error);
     border: 1px solid rgba(231, 76, 60, 0.3);
+}
+
+.message.info {
+    display: block;
+    background-color: rgba(25, 163, 105, 0.1);
+    color: var(--primary);
+    border: 1px solid rgba(25, 163, 105, 0.3);
 }
 
 /* ---- Победители ---- */
@@ -501,6 +540,9 @@ tbody tr:hover {
 
 /* ---- Адаптивность (Mobile) ---- */
 @media (max-width: 768px) {
+    .navbar-brand {
+        margin-left: -20px;
+    }
     .admin-stats {
         grid-template-columns: 1fr;
     }
@@ -565,3 +607,223 @@ tbody tr:hover {
         transform: rotate(360deg);
     }
 }
+
+/* ---- Призы (Prizes) ---- */
+.prizes-section {
+    padding: 60px 0;
+    background-color: var(--secondary);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.prizes-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.prize-card {
+    background-color: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius);
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: transform 0.3s ease, border-color 0.3s ease;
+    cursor: pointer;
+    text-decoration: none;
+    color: inherit;
+}
+
+.prize-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--primary);
+}
+
+.prize-rank {
+    background-color: rgba(0, 166, 88, 0.1);
+    color: var(--primary);
+    font-family: var(--font-heading);
+    font-weight: 700;
+    font-size: 1.1rem;
+    min-width: 45px;
+    height: 45px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0, 166, 88, 0.3);
+}
+
+.prize-text {
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--text-color);
+    line-height: 1.4;
+}
+
+/* Убираем стрелочки (spin buttons) у поля ввода суммы */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+}
+input[type="number"] {
+    -moz-appearance: textfield;
+}
+
+/* ---- Кастомизация Flatpickr в стиле GO ---- */
+.flatpickr-calendar {
+    border-radius: var(--radius) !important;
+    border: 2px solid var(--primary) !important;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.9), 0 0 15px rgba(0, 166, 88, 0.3) !important;
+    background-color: var(--card-bg) !important;
+    color: var(--text-color) !important;
+    font-family: inherit !important;
+}
+.flatpickr-calendar.arrowTop:after {
+    border-bottom-color: var(--card-bg) !important;
+}
+.flatpickr-calendar.arrowBottom:after {
+    border-top-color: var(--card-bg) !important;
+}
+.flatpickr-calendar.arrowTop:before {
+    border-bottom-color: var(--primary) !important;
+}
+.flatpickr-calendar.arrowBottom:before {
+    border-top-color: var(--primary) !important;
+}
+.flatpickr-months {
+    background-color: var(--card-bg) !important;
+}
+.flatpickr-months .flatpickr-month {
+    color: var(--text-color) !important;
+    fill: var(--text-color) !important;
+}
+.flatpickr-months .flatpickr-prev-month, 
+.flatpickr-months .flatpickr-next-month {
+    color: var(--text-color) !important;
+    fill: var(--text-color) !important;
+}
+.flatpickr-months .flatpickr-prev-month:hover svg, 
+.flatpickr-months .flatpickr-next-month:hover svg {
+    fill: var(--primary) !important;
+}
+.flatpickr-current-month .numInputWrapper span.arrowUp:after {
+    border-bottom-color: var(--text-color) !important;
+}
+.flatpickr-current-month .numInputWrapper span.arrowDown:after {
+    border-top-color: var(--text-color) !important;
+}
+.flatpickr-current-month input.cur-year {
+    color: var(--text-color) !important;
+    font-family: inherit !important;
+}
+.flatpickr-current-month .flatpickr-monthDropdown-months {
+    color: var(--text-color) !important;
+    background: var(--card-bg) !important;
+    font-family: inherit !important;
+}
+span.flatpickr-weekday {
+    color: var(--text-color) !important;
+    font-weight: 700 !important;
+}
+.flatpickr-day {
+    color: var(--text-color) !important;
+}
+.flatpickr-day.flatpickr-disabled, 
+.flatpickr-day.flatpickr-disabled:hover,
+.flatpickr-day.prevMonthDay, 
+.flatpickr-day.nextMonthDay, 
+.flatpickr-day.notAllowed, 
+.flatpickr-day.notAllowed.prevMonthDay, 
+.flatpickr-day.notAllowed.nextMonthDay {
+    color: rgba(255, 255, 255, 0.25) !important;
+    background: transparent !important;
+}
+.flatpickr-day.selected, 
+.flatpickr-day.selected:focus, 
+.flatpickr-day.selected:hover,
+.flatpickr-day.selected.prevMonthDay, 
+.flatpickr-day.selected.nextMonthDay {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #fff !important;
+}
+.flatpickr-day:hover, 
+.flatpickr-day.prevMonthDay:hover, 
+.flatpickr-day.nextMonthDay:hover, 
+.flatpickr-day.today:hover, 
+.flatpickr-day.today.prevMonthDay:hover, 
+.flatpickr-day.today.nextMonthDay:hover {
+    background: rgba(0, 166, 88, 0.2) !important;
+    border-color: transparent !important;
+    color: #ffffff !important;
+}
+.flatpickr-day.today {
+    border-color: var(--primary) !important;
+}
+.flatpickr-time {
+    border-top: 1px solid var(--border-color) !important;
+    background-color: var(--card-bg) !important;
+}
+.flatpickr-time .numInputWrapper {
+    color: var(--text-color) !important;
+}
+.flatpickr-time input {
+    color: var(--text-color) !important;
+}
+.flatpickr-time input:focus, 
+.flatpickr-time select:focus {
+    background: rgba(0, 166, 88, 0.1) !important;
+}
+.flatpickr-time .flatpickr-time-separator {
+    color: var(--text-color) !important;
+}
+.flatpickr-time .flatpickr-am-pm {
+    color: var(--text-color) !important;
+}
+
+/* Скрываем стрелочки переключения (вверх/вниз) во всех полях Flatpickr */
+.flatpickr-calendar .numInputWrapper span {
+    display: none !important;
+}
+
+/* flatpickr mobile adjustments */
+.flatpickr-calendar {
+    max-width: 280px !important;
+}
+
+@media (max-width: 480px) {
+    .flatpickr-calendar {
+        font-size: 13px !important;
+    }
+    .flatpickr-day {
+        max-width: 32px !important;
+        height: 32px !important;
+        line-height: 32px !important;
+    }
+    .flatpickr-innerContainer, .flatpickr-rContainer {
+        width: 100% !important;
+    }
+    .flatpickr-days {
+        width: auto !important;
+    }
+    .dayContainer {
+        min-width: unset !important;
+        max-width: unset !important;
+        width: 100% !important;
+    }
+    .flatpickr-current-month {
+        font-size: 110% !important;
+        padding: 0 !important;
+    }
+    .flatpickr-calendar.hasTime .flatpickr-time {
+        height: 35px !important;
+        line-height: 35px !important;
+    }
+}
+
+

@@ -31,7 +31,7 @@
 
 ### Frontend
 
-- HTML
+- HTML5
 - CSS3
 - JavaScript (ES Modules)
 - Vite
