@@ -2,8 +2,8 @@
 
 /* Основные переменные для фирменного стиля: зеленый + темный */
 :root {
-    --primary: #19a369; /* Новый фирменный зеленый */
-    --primary-hover: #158b5a;
+    --primary: #06a658;
+    --primary-hover: #058e4a;
     --secondary: #1a1a1a;
     --bg-color: #121212;
     --text-color: #e0e0e0;
@@ -11,7 +11,7 @@
     --card-bg: #1e1e1e;
     --border-color: #333333;
     --error: #cf6679;
-    --success: #19a369;
+    --success: #06a658;
     --shadow: 0 4px 6px rgba(0,0,0,0.5);
     --shadow-hover: 0 10px 20px rgba(25, 163, 105, 0.2);
     --radius: 4px; /* GO uses somewhat sharper corners */

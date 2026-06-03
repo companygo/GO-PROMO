@@ -399,11 +399,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   function normalizeTime(timeStr) {
     let cleaned = timeStr.trim();
     
-    // Check if browser returned HH:MM (length 5)
-    if (/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/.test(cleaned)) {
-      cleaned += ":00";
-    }
-    
     // Strict format check for HH:MM:SS
     const strictRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$/;
     if (!strictRegex.test(cleaned)) {
@@ -765,9 +760,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         card.innerHTML = `
                     <h4 style="margin-bottom: 8px; font-family: var(--font-heading); font-size: 1.25rem;">🎉 Победитель №${w.prize || idx + 1}</h4>
-                    <div class="winner-name" style="font-size: 1.15rem; font-weight: 600; color: var(--primary, #19a369); margin-bottom: 10px; font-family: var(--font-heading);">${escapeHTML(w.name || "Участник")}</div>
+                    <div class="winner-name" style="font-size: 1.15rem; font-weight: 600; color: var(--primary, #06a658); margin-bottom: 10px; font-family: var(--font-heading);">${escapeHTML(w.name || "Участник")}</div>
                     <div class="receipt" style="font-family: monospace; font-size: 1.1rem; background: #121212; padding: 4px 10px; border-radius: 4px; color: var(--text-color); margin-bottom: 15px; display: inline-block; border: 1px solid var(--border-color);">${escapeHTML(receiptFull)}</div>
-                    ${w.prize ? `<div class="prize-info" style="color: var(--primary, #19a369); font-weight: bold; margin-top: 5px; font-size: 0.95rem;">${escapeHTML(resolvePrizeName(w.prize))}</div>` : ""}
+                    ${w.prize ? `<div class="prize-info" style="color: var(--primary, #06a658); font-weight: bold; margin-top: 5px; font-size: 0.95rem;">${escapeHTML(resolvePrizeName(w.prize))}</div>` : ""}
                     ${isAdmin ? `<div class="date" style="margin-top: 12px; font-size: 0.8rem; opacity: 0.7;"><small>Дата розыгрыша: ${escapeHTML(formatDate(w.date))}</small></div>` : ""}
                 `;
         list.appendChild(card);
@@ -786,7 +781,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("participantsBody").innerHTML = `
       <tr>
         <td colspan="7" style="text-align: center; padding: 40px; color: var(--text-muted, #888);">
-          <div class="loader-spinner" style="display: inline-block; width: 22px; height: 22px; border: 2.5px solid #333; border-top-color: var(--primary, #19a369); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 12px; vertical-align: middle;"></div>
+          <div class="loader-spinner" style="display: inline-block; width: 22px; height: 22px; border: 2.5px solid #333; border-top-color: var(--primary, #06a658); border-radius: 50%; animation: spin 1s linear infinite; margin-right: 12px; vertical-align: middle;"></div>
           Загрузка участников...
         </td>
       </tr>
@@ -1114,7 +1109,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       title.style.fontSize = "1.3rem";
       if (isSuccess) {
         title.textContent = "Успешно!";
-        title.style.color = "var(--primary, #19a369)";
+        title.style.color = "var(--primary, #06a658)";
       } else {
         title.textContent = "Уведомление";
         title.style.color = "#ffcc00";
@@ -1131,7 +1126,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       okBtn.className = "btn";
       okBtn.textContent = "ОК";
       okBtn.style.padding = "10px 30px";
-      okBtn.style.background = isSuccess ? "var(--primary, #19a369)" : "#444";
+      okBtn.style.background = isSuccess ? "var(--primary, #06a658)" : "#444";
       okBtn.style.color = "white";
       okBtn.style.border = "none";
       okBtn.style.cursor = "pointer";
@@ -1737,8 +1732,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       statusText.style.color = "var(--error, #cf6679)";
       toggleBtn.textContent = "🟢 Открыть регистрацию";
       toggleBtn.className = "btn btn-outline";
-      toggleBtn.style.color = "var(--primary, #19a369)";
-      toggleBtn.style.borderColor = "var(--primary, #19a369)";
+      toggleBtn.style.color = "var(--primary, #06a658)";
+      toggleBtn.style.borderColor = "var(--primary, #06a658)";
     }
   }
 
