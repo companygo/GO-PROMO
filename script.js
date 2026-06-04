@@ -292,6 +292,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   );
 
   // Авторизация администратора
+  const togglePasswordBtn = document.getElementById("togglePasswordBtn");
+  const adminPassInput = document.getElementById("adminPass");
+  const eyeIconVisible = document.getElementById("eyeIconVisible");
+  const eyeIconHidden = document.getElementById("eyeIconHidden");
+
+  if (togglePasswordBtn) {
+    togglePasswordBtn.addEventListener("click", () => {
+      if (adminPassInput.type === "password") {
+        adminPassInput.type = "text";
+        eyeIconVisible.style.display = "block";
+        eyeIconHidden.style.display = "none";
+        togglePasswordBtn.style.color = "var(--text-muted)";
+      } else {
+        adminPassInput.type = "password";
+        eyeIconVisible.style.display = "none";
+        eyeIconHidden.style.display = "block";
+        togglePasswordBtn.style.color = "var(--primary)";
+      }
+    });
+  }
+
   loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     const user = document.getElementById("adminUser").value;

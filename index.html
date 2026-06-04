@@ -877,7 +877,7 @@
           </h3>
           <div style="background: #111; padding: 25px; border-radius: var(--radius); border-left: 4px solid var(--primary); margin-bottom: 30px;">
             <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
-              Определяет минимальную сумму чека для участия в акции. 
+              Определяет минимальную сумму чека для участия в акции. После сохранения изменения применяются к валидатору формы и тексту на сайте через GitHub API.
             </p>
             <div class="form-group" style="margin-bottom: 20px">
               <label for="adminMinAmount" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color);">
@@ -1023,15 +1023,21 @@
     <div id="loginModal" class="modal hidden">
       <div class="modal-content">
         <span class="close-btn" id="closeModalBtn">&times;</span>
-        <h2>Вход для администратора</h2>
+        <h2>Вход для <span style="color: var(--primary);">администратора</span></h2>
         <form id="loginForm">
           <div class="form-group">
-            <label for="adminUser">Логин</label>
+            <label for="adminUser" style="color: var(--primary);">Логин</label>
             <input type="text" id="adminUser" required />
           </div>
           <div class="form-group">
-            <label for="adminPass">Пароль</label>
-            <input type="password" id="adminPass" required />
+            <label for="adminPass" style="color: var(--primary);">Пароль</label>
+            <div style="position: relative;">
+              <input type="password" id="adminPass" required style="padding-right: 40px; width: 100%;" />
+              <button type="button" id="togglePasswordBtn" style="position: absolute; right: 12px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--primary); cursor: pointer; padding: 0; outline: none; display: flex; align-items: center; justify-content: center;">
+                <svg id="eyeIconHidden" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line></svg>
+                <svg id="eyeIconVisible" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display: none;"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+              </button>
+            </div>
           </div>
           <div id="loginMessage" class="message"></div>
           <button type="submit" class="btn btn-primary">Войти</button>
