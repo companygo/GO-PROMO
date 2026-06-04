@@ -234,7 +234,7 @@
             "
           >
             Покупайте в салонах GO на сумму от
-            <span style="color: var(--primary)"><span id="promoMinAmountText1"><!-- MIN_AMOUNT_START -->500<!-- MIN_AMOUNT_END --></span> рублей</span>,
+            <span style="color: var(--primary)"><span id="promoMinAmountText1"><!-- MIN_AMOUNT_START -->1500<!-- MIN_AMOUNT_END --></span> рублей</span>,
             регистрируйте чек и участвуйте в розыгрыше призов ко дню рождения
             сети!
           </p>
@@ -291,9 +291,9 @@
                 id="amount"
                 name="amount"
                 required
-                min="500"
+                min="1500"
                 step="1"
-                placeholder="Минимум 500 рублей"
+                placeholder="Минимум 1500 рублей"
                 oninput="this.value = this.value.replace(/\D/g, '')"
               />
             </div>
@@ -372,7 +372,7 @@
                     <span style="font-weight: 600; min-width: 15px; color: var(--primary);">2</span>
                     <span>
                       Сумма покупки должна составлять<br />
-                      <strong style="color: var(--primary)">не менее <span id="promoMinAmountText2"><!-- MIN_AMOUNT_START -->500<!-- MIN_AMOUNT_END --></span> рублей</strong>.
+                      <strong style="color: var(--primary)">не менее <span id="promoMinAmountText2"><!-- MIN_AMOUNT_START -->1500<!-- MIN_AMOUNT_END --></span> рублей</strong>.
                     </span>
                   </li>
                   <li style="counter-increment: item; display: flex; gap: 10px; margin-bottom: 10px;">
@@ -856,6 +856,22 @@
             </div>
           </div>
 
+          <div
+            id="settingsMessage"
+            class="message"
+            style="margin-bottom: 25px"
+          ></div>
+
+          <div style="text-align: right; margin-bottom: 30px;">
+            <button
+              id="saveSettingsBtn"
+              class="btn btn-primary"
+              style="padding: 12px 30px; font-size: 1.05rem"
+            >
+              Сохранить настройки
+            </button>
+          </div>
+
           <h3 style="margin-bottom: 25px; color: var(--primary)">
             💰 Минимальная сумма покупки
           </h3>
@@ -902,22 +918,6 @@
               class="message"
               style="margin-top: 15px; display: none"
             ></div>
-          </div>
-
-          <div
-            id="settingsMessage"
-            class="message"
-            style="margin-bottom: 25px"
-          ></div>
-
-          <div style="text-align: right">
-            <button
-              id="saveSettingsBtn"
-              class="btn btn-primary"
-              style="padding: 12px 30px; font-size: 1.05rem"
-            >
-              Сохранить настройки
-            </button>
           </div>
         </div>
 
