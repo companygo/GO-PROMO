@@ -78,6 +78,7 @@ function getSettings(ss) {
   const sitePrizesStr = p.getProperty("SITE_PRIZES");
   const siteTitleStr = p.getProperty("SITE_TITLE");
   const siteSubtitleStr = p.getProperty("SITE_SUBTITLE");
+  const minAmountStr = p.getProperty("PROMO_MIN_AMOUNT");
 
   if (siteTitleStr) {
     settings.heroTitle = siteTitleStr;
@@ -85,6 +86,17 @@ function getSettings(ss) {
   if (siteSubtitleStr) {
     settings.heroSubtitle = siteSubtitleStr;
   }
+  
+  // Минимальная сумма: приоритет Script Properties -> Sheet -> 1500
+  let parsedMin = 1500;
+  if (minAmountStr && !isNaN(parseInt(minAmountStr, 10))) {
+    parsedMin = parseInt(minAmountStr, 10);
+  } else if (settings.PROMO_MIN_AMOUNT && !isNaN(parseInt(settings.PROMO_MIN_AMOUNT, 10))) {
+    parsedMin = parseInt(settings.PROMO_MIN_AMOUNT, 10);
+  } else if (settings.minPurchaseAmount && !isNaN(parseInt(settings.minPurchaseAmount, 10))) {
+    parsedMin = parseInt(settings.minPurchaseAmount, 10);
+  }
+  settings.minPurchaseAmount = parsedMin;
 
   if (sitePrizesStr) {
     try {
@@ -422,12 +434,12 @@ function doPost(e) {
       }
 
       // Проверка суммы покупки
-      if (amount < 1500) {
+      if (amount < settings.minPurchaseAmount) {
         return ContentService.createTextOutput(
           JSON.stringify({
             success: false,
             message:
-              "Минимальная сумма покупки для участия в акции — 1500 рублей",
+              "Минимальная сумма покупки для участия в акции — " + settings.minPurchaseAmount + " рублей",
           }),
         ).setMimeType(ContentService.MimeType.JSON);
       }
@@ -1119,6 +1131,141 @@ function doPost(e) {
             warning: true,
             message: "Настройки сохранены в Таблице, но произошла ошибка при интеграции с GitHub: " + err.toString() + ". Новые данные будут подгружаться на сайт в реальном времени.",
           }),
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+    }
+
+    if (data.action === "saveMinPurchaseAmount") {
+      const token = data.token;
+      const cache = CacheService.getScriptCache();
+      const adminUser = token ? cache.get("auth_" + token) : null;
+      if (!token || !adminUser) {
+        return ContentService.createTextOutput(
+          JSON.stringify({ success: false, message: "Необходима авторизация" })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      if (!data.minPurchaseAmount || isNaN(parseInt(data.minPurchaseAmount, 10))) {
+        return ContentService.createTextOutput(
+          JSON.stringify({ success: false, message: "Некорректная сумма" })
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+      
+      const newAmount = String(parseInt(data.minPurchaseAmount, 10));
+
+      const p = PropertiesService.getScriptProperties();
+      const githubToken = p.getProperty("GITHUB_TOKEN");
+      const githubOwner = p.getProperty("GITHUB_OWNER");
+      const githubRepo = p.getProperty("GITHUB_REPO");
+
+      if (!githubToken || !githubOwner || !githubRepo) {
+        // Если GitHub не настроен, просто сохраняем на сервере
+        try {
+          p.setProperty("PROMO_MIN_AMOUNT", newAmount);
+          saveSettingKey(ss, "PROMO_MIN_AMOUNT", newAmount);
+          logAction("UPDATE_MIN_AMOUNT", newAmount, adminUser);
+          return ContentService.createTextOutput(
+            JSON.stringify({
+              success: true,
+              warning: true,
+              message: "Сумма успешно сохранена на сервере, но GitHub API настройки не заданы. Обновление на сайте произойдет после ручного редактирования index.html",
+            })
+          ).setMimeType(ContentService.MimeType.JSON);
+        } catch (saveErr) {
+          return ContentService.createTextOutput(
+            JSON.stringify({ success: false, message: "Ошибка сохранения в БД: " + saveErr.message })
+          ).setMimeType(ContentService.MimeType.JSON);
+        }
+      }
+
+      // GitHub настроен, сначала обновляем GitHub
+      try {
+        const url = "https://api.github.com/repos/" + githubOwner + "/" + githubRepo + "/contents/index.html";
+        const getResponse = UrlFetchApp.fetch(url, {
+          method: "GET",
+          headers: {
+            "Authorization": "token " + githubToken,
+            "Accept": "application/vnd.github.v3+json",
+          },
+          muteHttpExceptions: true,
+        });
+
+        if (getResponse.getResponseCode() !== 200) {
+          return ContentService.createTextOutput(
+            JSON.stringify({
+              success: false,
+              message: "Не удалось получить index.html из GitHub.",
+            })
+          ).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        const fileData = JSON.parse(getResponse.getContentText());
+        const indexHtmlContent = Utilities.newBlob(Utilities.base64Decode(fileData.content)).getDataAsString("UTF-8");
+
+        // Замена меток в HTML
+        let newHtmlContent = indexHtmlContent.replace(/<!-- MIN_AMOUNT_START -->\d+<!-- MIN_AMOUNT_END -->/g, "<!-- MIN_AMOUNT_START -->" + newAmount + "<!-- MIN_AMOUNT_END -->");
+        newHtmlContent = newHtmlContent.replace(/(id="amount"[\s\S]*?min=")\d+("/, '$1' + newAmount + '$2');
+        newHtmlContent = newHtmlContent.replace(/(id="amount"[\s\S]*?placeholder="Минимум )\d+( рублей")/, '$1' + newAmount + '$2');
+
+        let isUnchanged = false;
+        if (indexHtmlContent.trim() === newHtmlContent.trim()) {
+          isUnchanged = true;
+        }
+
+        if (!isUnchanged) {
+          try {
+            updateGitFile(
+              githubOwner,
+              githubRepo,
+              githubToken,
+              "index.html",
+              newHtmlContent,
+              "admin: update minimum purchase amount to " + newAmount
+            );
+          } catch (gitWriteErr) {
+            return ContentService.createTextOutput(
+              JSON.stringify({
+                success: false,
+                message: "Не удалось записать изменения index.html в GitHub.",
+              })
+            ).setMimeType(ContentService.MimeType.JSON);
+          }
+        }
+
+        // Если GitHub обновился (или не требовал изменений), атомарно сохраняем на сервере
+        try {
+          p.setProperty("PROMO_MIN_AMOUNT", newAmount);
+          saveSettingKey(ss, "PROMO_MIN_AMOUNT", newAmount); // backup in spreadsheet
+          logAction("UPDATE_MIN_AMOUNT", newAmount, adminUser);
+        } catch (saveErr) {
+          return ContentService.createTextOutput(
+            JSON.stringify({ success: false, message: "GitHub обновлен, но ошибка сохранения в БД: " + saveErr.message })
+          ).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        if (isUnchanged) {
+          return ContentService.createTextOutput(
+            JSON.stringify({
+              success: true,
+              no_changes: true,
+              message: "Сумма успешно сохранена. В index.html изменений не требуется (уже обновлен).",
+            })
+          ).setMimeType(ContentService.MimeType.JSON);
+        }
+
+        return ContentService.createTextOutput(
+          JSON.stringify({
+            success: true,
+            message: "Сумма успешно сохранена и автоматически обновлена на сайте (GitHub Pages обновится через пару минут).",
+          })
+        ).setMimeType(ContentService.MimeType.JSON);
+
+      } catch (err) {
+        return ContentService.createTextOutput(
+          JSON.stringify({
+            success: false,
+            message: "Интеграция с GitHub завершилась с ошибкой: " + err.toString(),
+          })
         ).setMimeType(ContentService.MimeType.JSON);
       }
     }

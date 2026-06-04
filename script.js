@@ -457,9 +457,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Проверка суммы покупки
-    if (isNaN(amountVal) || amountVal < 1500) {
+    const minAmountInput = document.getElementById("amount");
+    const requiredMinAmount = minAmountInput && minAmountInput.getAttribute("min") ? parseInt(minAmountInput.getAttribute("min"), 10) : 1500;
+    
+    if (isNaN(amountVal) || amountVal < requiredMinAmount) {
       msg.textContent =
-        "Минимальная сумма покупки для участия в акции — 1500 рублей.";
+        `Минимальная сумма покупки для участия в акции — ${requiredMinAmount} рублей.`;
       msg.className = "message error";
       return;
     }
@@ -1773,6 +1776,16 @@ document.addEventListener("DOMContentLoaded", async () => {
   function fillSiteSettingsInputs() {
     const titleInput = document.getElementById("adminSiteTitle");
     const subtitleInput = document.getElementById("adminSiteSubtitle");
+    const minAmountInput = document.getElementById("adminMinAmount");
+    
+    if (minAmountInput) {
+      const publicMinAmountInput = document.getElementById("amount");
+      if (publicMinAmountInput && publicMinAmountInput.getAttribute("min")) {
+        minAmountInput.value = publicMinAmountInput.getAttribute("min");
+      } else {
+        minAmountInput.value = "1500";
+      }
+    }
     
     const heroTitleNode = document.getElementById("hero-title");
     if (titleInput) {
@@ -2245,6 +2258,85 @@ document.addEventListener("DOMContentLoaded", async () => {
       } finally {
         saveSiteSettingsBtn.disabled = false;
         saveSiteSettingsBtn.textContent = "Сохранить настройки сайта";
+      }
+    });
+  }
+
+  const saveMinAmountBtn = document.getElementById("saveMinAmountBtn");
+  if (saveMinAmountBtn) {
+    saveMinAmountBtn.addEventListener("click", async () => {
+      const msg = document.getElementById("minAmountMessage");
+      const minAmountVal = document.getElementById("adminMinAmount").value.trim();
+
+      if (!minAmountVal || isNaN(parseInt(minAmountVal, 10)) || parseInt(minAmountVal, 10) < 0) {
+        msg.style.display = "block";
+        msg.textContent = "Введите корректную минимальную сумму.";
+        msg.className = "message error";
+        return;
+      }
+
+      saveMinAmountBtn.disabled = true;
+      saveMinAmountBtn.textContent = "Сохранение...";
+      msg.style.display = "none";
+      msg.className = "message";
+
+      try {
+        if (useMock) {
+          // Fake delay
+          await new Promise(r => setTimeout(r, 600));
+          msg.textContent = "Сумма успешно сохранена (демо-режим).";
+          msg.className = "message success";
+          msg.style.display = "block";
+          
+          // update DOM directly
+          document.getElementById("amount").setAttribute("min", minAmountVal);
+          document.getElementById("amount").setAttribute("placeholder", "Минимум " + minAmountVal + " рублей");
+          const m1 = document.getElementById("promoMinAmountText1");
+          if (m1) m1.innerHTML = "<!-- MIN_AMOUNT_START -->" + minAmountVal + "<!-- MIN_AMOUNT_END -->";
+          const m2 = document.getElementById("promoMinAmountText2");
+          if (m2) m2.innerHTML = "<!-- MIN_AMOUNT_START -->" + minAmountVal + "<!-- MIN_AMOUNT_END -->";
+        } else {
+          const payload = {
+            action: "saveMinPurchaseAmount",
+            token: adminToken,
+            minPurchaseAmount: minAmountVal
+          };
+          const res = await fetch(config.googleScriptUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "text/plain;charset=utf-8",
+            },
+            body: JSON.stringify(payload),
+          });
+          const json = await res.json();
+          msg.style.display = "block";
+          if (json.success) {
+            msg.textContent = json.message || "Сумма успешно сохранена.";
+            msg.className = "message success";
+            
+            // dynamically update DOM without full reload
+            const amountInput = document.getElementById("amount");
+            if (amountInput) {
+              amountInput.setAttribute("min", minAmountVal);
+              amountInput.setAttribute("placeholder", "Минимум " + minAmountVal + " рублей");
+            }
+            const m1 = document.getElementById("promoMinAmountText1");
+            if (m1) m1.innerHTML = "<!-- MIN_AMOUNT_START -->" + minAmountVal + "<!-- MIN_AMOUNT_END -->";
+            const m2 = document.getElementById("promoMinAmountText2");
+            if (m2) m2.innerHTML = "<!-- MIN_AMOUNT_START -->" + minAmountVal + "<!-- MIN_AMOUNT_END -->";
+          } else {
+            msg.textContent = json.message || "Ошибка при сохранении суммы.";
+            msg.className = "message error";
+          }
+        }
+      } catch (err) {
+        console.error("Ошибка при сохранении суммы:", err);
+        msg.style.display = "block";
+        msg.textContent = "Произошла ошибка связи с сервером.";
+        msg.className = "message error";
+      } finally {
+        saveMinAmountBtn.disabled = false;
+        saveMinAmountBtn.textContent = "Сохранить сумму акции";
       }
     });
   }

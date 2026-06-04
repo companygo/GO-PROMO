@@ -52,7 +52,7 @@
               text-transform: uppercase;
             "
           >
-            <!-- HERO_SUBTITLE_START -->Выиграй главный приз — смартфон Xiaomi !<!-- HERO_SUBTITLE_END -->
+            <!-- HERO_SUBTITLE_START -->Выиграй главный приз — смартфон Xiaomi!<!-- HERO_SUBTITLE_END -->
           </p>
 
           <!-- Отсчет до розыгрыша -->
@@ -196,19 +196,19 @@
             <!-- PRIZE_8_END -->
             <!-- PRIZE_9_START -->
             <a
-              href="https://go-go.md/products/nochniki-k-1155-cute-panda-panda"
+              href="https://go-go.md/products/nochniki-k-1155-cute-panda-panda?ysclid=mpx3g0uwwy472127586"
               target="_blank"
               class="prize-card"
             >
               <div class="prize-rank">9</div>
               <div class="prize-text">
-                Ночники K-1155 Cute Panda Панда
+                Ночники K-1155 Cute Panda
               </div>
             </a>
             <!-- PRIZE_9_END -->
             <!-- PRIZE_10_START -->
             <a
-              href="https://go-go.md/products/naushniki-xiaomi-headphones-basic-chernye"
+              href="https://go-go.md/products/naushniki-xiaomi-headphones-basic-chernye?ysclid=mpx3gmv1zp933702573"
               target="_blank"
               class="prize-card"
             >
@@ -234,7 +234,7 @@
             "
           >
             Покупайте в салонах GO на сумму от
-            <span style="color: var(--primary)">1500 рублей</span>,
+            <span style="color: var(--primary)"><span id="promoMinAmountText1"><!-- MIN_AMOUNT_START -->1500<!-- MIN_AMOUNT_END --></span> рублей</span>,
             регистрируйте чек и участвуйте в розыгрыше призов ко дню рождения
             сети!
           </p>
@@ -372,7 +372,7 @@
                     <span style="font-weight: 600; min-width: 15px; color: var(--primary);">2</span>
                     <span>
                       Сумма покупки должна составлять<br />
-                      <strong style="color: var(--primary)">не менее 1500 рублей</strong>.
+                      <strong style="color: var(--primary)">не менее <span id="promoMinAmountText2"><!-- MIN_AMOUNT_START -->1500<!-- MIN_AMOUNT_END --></span> рублей</strong>.
                     </span>
                   </li>
                   <li style="counter-increment: item; display: flex; gap: 10px; margin-bottom: 10px;">
@@ -886,6 +886,54 @@
             margin-bottom: 40px;
           "
         >
+          <h3 style="margin-bottom: 25px; color: var(--primary)">
+            💰 Минимальная сумма покупки
+          </h3>
+          <div style="background: #111; padding: 25px; border-radius: var(--radius); border-left: 4px solid var(--primary); margin-bottom: 30px;">
+            <p style="margin-bottom: 15px; color: var(--text-muted); font-size: 0.9rem;">
+              Определяет минимальную сумму чека для участия в акции. После сохранения изменения применяются к валидатору формы и тексту на сайте через GitHub API.
+            </p>
+            <div class="form-group" style="margin-bottom: 20px">
+              <label for="adminMinAmount" style="display: block; margin-bottom: 8px; font-weight: 600; color: var(--text-color);">
+                Сумма (в рублях)
+              </label>
+              <input
+                type="number"
+                id="adminMinAmount"
+                min="0"
+                step="1"
+                required
+                style="
+                  width: 100%;
+                  max-width: 300px;
+                  padding: 12px;
+                  border: 1px solid var(--border-color);
+                  border-radius: var(--radius);
+                  background-color: #121212;
+                  color: var(--text-color);
+                  font-size: 1rem;
+                  outline: none;
+                  transition: border-color 0.3s;
+                "
+              />
+            </div>
+            <div style="text-align: right">
+              <button
+                type="button"
+                id="saveMinAmountBtn"
+                class="btn"
+                style="padding: 10px 20px; font-weight: 600"
+              >
+                Сохранить сумму акции
+              </button>
+            </div>
+            <div
+              id="minAmountMessage"
+              class="message"
+              style="margin-top: 15px; display: none"
+            ></div>
+          </div>
+
           <h3 style="margin-bottom: 25px; color: var(--primary)">
             ⚙️ Настройки сайта и призов
           </h3>
