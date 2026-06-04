@@ -158,16 +158,19 @@ function fetchWinnersData(ss) {
   const data = sheet.getDataRange().getValues();
   const winners = [];
 
-  // Columns: ФД (0), Имя (1), Телефон (2), Приз (3), Дата розыгрыша (4)
+  // Columns: ФД (0), Имя (1), Телефон (2), Приз (3), Дата розыгрыша (4), Историческое название (5)
   for (let i = 1; i < data.length; i++) {
     let rawPrize = String(data[i][3]).trim();
+    let historicalName = data[i][5] ? String(data[i][5]).trim() : "";
     let prizeNum;
-    let prizeName = "";
+    let prizeName = historicalName;
     
     if (rawPrize.indexOf("::") !== -1) {
       let parts = rawPrize.split("::");
       prizeNum = parseInt(parts[0], 10);
-      prizeName = parts.slice(1).join("::");
+      if (!prizeName) {
+        prizeName = parts.slice(1).join("::");
+      }
     } else {
       prizeNum = parsePrize(rawPrize);
     }
@@ -698,8 +701,9 @@ function doPost(e) {
           "'" + winnerData[0], // ФД
           winnerData[3], // Имя
           "'" + winnerData[4], // Телефон
-          "'" + prizeIndex + "::" + drawnPrizeName, // Приз и название приза
+          prizeIndex, // Приз (номер)
           drawDate, // Дата розыгрыша
+          drawnPrizeName // Историческое название приза
         ]);
 
         // Логируем действие администратора
@@ -1310,9 +1314,9 @@ function replaceSiteSettings(htmlContent, title, subtitle, prizes) {
   return result;
 }
 
-// Скрипт одноразовой миграции 
-// Запустите эту функцию вручную из редактора Google Apps Script, чтобы зафиксировать старые названия призов.
-function migrateOldWinners() {
+// Скрипт миграции
+// Запустите эту функцию вручную из редактора Google Apps Script
+function migratePrizeNamesToColumnF() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sheet = ss.getSheetByName(SHEET_WINNERS);
   if (!sheet) {
@@ -1326,13 +1330,17 @@ function migrateOldWinners() {
     return;
   }
 
-  // Получаем текущие настройки и список призов, чтобы использовать их как исторический источник (пока их не поменяли)
+  // Ensure header for column F exists
+  if (!data[0][5]) {
+    sheet.getRange(1, 6).setValue("Историческое название приза");
+  }
+
+  // Получаем текущие настройки и список призов, чтобы использовать как фоллбэк
   const settings = getSettings(ss);
   let PRIZES = [];
   if (settings.prizes && settings.prizes.length > 0) {
     PRIZES = settings.prizes.map(function(item) { return item.name; });
   } else {
-    // Резервный старый список
     PRIZES = [
       "Смартфон Redmi Note 15 Pro Plus 5G 8/256",
       "Матрас туристический Youpin One Night Automatic Inflatable Leisure Bed PS1",
@@ -1349,25 +1357,37 @@ function migrateOldWinners() {
 
   let migratedCount = 0;
   for (let i = 1; i < data.length; i++) {
-    let rawPrize = String(data[i][3]).trim(); // Колонка D (индекс 3) - Приз
+    let rawPrize = String(data[i][3]).trim(); // Колонка D (индекс 3)
+    let colF = String(data[i][5] || "").trim(); // Колонка F (индекс 5)
     
-    // Если уже в новом формате, пропускаем
-    if (rawPrize.indexOf("::") !== -1) {
+    // Если в кол D уже только число, и кол F заполнена — пропускаем
+    let parsedAsNum = parseInt(rawPrize, 10);
+    if (String(parsedAsNum) === rawPrize && colF !== "") {
       continue;
     }
 
-    let parsed = parsePrize(rawPrize);
-    if (typeof parsed === "number" && !isNaN(parsed)) {
-      let prizeIndex = parsed;
-      if (prizeIndex >= 1 && prizeIndex <= PRIZES.length) {
-        let historicalName = PRIZES[prizeIndex - 1];
-        let newValue = "'" + prizeIndex + "::" + historicalName;
-        // Записываем обратно в ячейку D (индекс колонки = 4, строка = i + 1)
-        sheet.getRange(i + 1, 4).setValue(newValue);
-        migratedCount++;
+    if (rawPrize.indexOf("::") !== -1) {
+      // Это формат номер::название
+      let parts = rawPrize.split("::");
+      let prizeIndex = parseInt(parts[0], 10);
+      let historicalName = parts.slice(1).join("::");
+      
+      sheet.getRange(i + 1, 4).setValue(prizeIndex); // Col D
+      sheet.getRange(i + 1, 6).setValue(historicalName); // Col F
+      migratedCount++;
+    } else {
+      // Если было просто число, а col F пустая
+      if (typeof parsedAsNum === "number" && !isNaN(parsedAsNum) && colF === "") {
+        let prizeIndex = parsedAsNum;
+        if (prizeIndex >= 1 && prizeIndex <= PRIZES.length) {
+          let historicalName = PRIZES[prizeIndex - 1];
+          sheet.getRange(i + 1, 4).setValue(prizeIndex); // Col D
+          sheet.getRange(i + 1, 6).setValue(historicalName); // Col F
+          migratedCount++;
+        }
       }
     }
   }
 
-  Logger.log("Миграция завершена. Обновлено записей: " + migratedCount);
+  Logger.log("Миграция 2.0 завершена. Обновлено записей: " + migratedCount);
 }
