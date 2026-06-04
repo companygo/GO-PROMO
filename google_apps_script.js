@@ -60,37 +60,94 @@ function getSettings(ss) {
     drawDate: "",
     registrationEnabled: "true",
     winnersPublished: "false",
+    heroTitle: "",
+    heroSubtitle: "",
   };
-  if (!sheet) return settings;
-  const values = sheet.getDataRange().getValues();
-  for (let i = 1; i < values.length; i++) {
-    const key = String(values[i][0]).trim();
-    const val = String(values[i][1]).trim();
-    if (key) {
-      settings[key] = val;
+  if (sheet) {
+    const values = sheet.getDataRange().getValues();
+    for (let i = 1; i < values.length; i++) {
+      const key = String(values[i][0]).trim();
+      const val = String(values[i][1]).trim();
+      if (key) {
+        settings[key] = val;
+      }
+    }
+  }
+  
+  const p = PropertiesService.getScriptProperties();
+  const sitePrizesStr = p.getProperty("SITE_PRIZES");
+  const siteTitleStr = p.getProperty("SITE_TITLE");
+  const siteSubtitleStr = p.getProperty("SITE_SUBTITLE");
+
+  if (siteTitleStr) {
+    settings.heroTitle = siteTitleStr;
+  }
+  if (siteSubtitleStr) {
+    settings.heroSubtitle = siteSubtitleStr;
+  }
+
+  if (sitePrizesStr) {
+    try {
+      settings.prizes = JSON.parse(sitePrizesStr);
+    } catch (e) {
+      settings.prizes = [];
+    }
+  } else {
+    settings.prizes = [];
+  }
+
+  // Резервное восстановление из таблицы Google Таблиц при отсутствии в Script Properties
+  if (!settings.prizes || settings.prizes.length === 0) {
+    const backupPrizes = settings.sitePrizes || settings.SITE_PRIZES;
+    if (backupPrizes) {
+      try {
+        settings.prizes = JSON.parse(backupPrizes);
+      } catch (e) {
+        settings.prizes = [];
+      }
     }
   }
   return settings;
 }
 
+// Вспомогательная функция для обновления или добавления ключа настройки в Google Sheets
+function saveSettingKey(ss, key, value) {
+  const sheet = ss.getSheetByName(SHEET_SETTINGS);
+  if (!sheet) return;
+  const values = sheet.getDataRange().getValues();
+  for (let i = 1; i < values.length; i++) {
+    if (String(values[i][0]).trim() === key) {
+      sheet.getRange(i + 1, 2).setValue(String(value));
+      return;
+    }
+  }
+  sheet.appendRow([key, String(value)]);
+}
+
 function parsePrize(val) {
+  const str = String(val).replace(/^'/, "").trim();
+  if (str.indexOf("::") !== -1) {
+    const parts = str.split("::");
+    const num = parseInt(parts[0], 10);
+    return isNaN(num) ? parts[0] : num;
+  }
   if (typeof val === "object" && val instanceof Date) {
-    // Google Sheets converts numbers like 1-10 to early 1900 dates if column gets formatted as date
+    // Google Sheets converts numbers like 1-N to early 1900 dates if column gets formatted as date
     // Dec 30 1899 is 0 in Google Sheets.
     // 1900-01-08 is roughly 9.
     // A simple way to recover small integers is to calculate days since Dec 30 1899
     const baseDate = new Date(Date.UTC(1899, 11, 30)); // Dec 30 1899
     const msPerDay = 24 * 60 * 60 * 1000;
     const diff = Math.round((val.getTime() - baseDate.getTime()) / msPerDay);
-    if (diff >= 1 && diff <= 10) return diff;
+    if (diff >= 1 && diff <= 1000) return diff;
     
     // Just in case timezone shifted it, get Date component
     if (val.getFullYear() === 1899 || val.getFullYear() === 1900) {
-      return val.getDate() + (val.getMonth() === 11 ? 1 : (val.getDate() >= 8 ? 1 : 0)); // very rough fallback, it's better to just extract the day and guess 1-10.
+      return val.getDate() + (val.getMonth() === 11 ? 1 : (val.getDate() >= 8 ? 1 : 0)); // fallback, guess rank from date component
     }
   }
   
-  let parsed = parseInt(String(val).replace(/^'/, ""), 10);
+  let parsed = parseInt(str, 10);
   return isNaN(parsed) ? val : parsed;
 }
 
@@ -103,12 +160,24 @@ function fetchWinnersData(ss) {
 
   // Columns: ФД (0), Имя (1), Телефон (2), Приз (3), Дата розыгрыша (4)
   for (let i = 1; i < data.length; i++) {
-    let rawPrize = data[i][3];
+    let rawPrize = String(data[i][3]).trim();
+    let prizeNum;
+    let prizeName = "";
+    
+    if (rawPrize.indexOf("::") !== -1) {
+      let parts = rawPrize.split("::");
+      prizeNum = parseInt(parts[0], 10);
+      prizeName = parts.slice(1).join("::");
+    } else {
+      prizeNum = parsePrize(rawPrize);
+    }
+    
     winners.push({
       receipt: cleanReceipt(data[i][0]),
       name: data[i][1],
       phone: cleanReceipt(data[i][2]),
-      prize: parsePrize(rawPrize),
+      prize: prizeNum,
+      prizeName: prizeName,
       date: data[i][4],
     });
   }
@@ -548,6 +617,13 @@ function doPost(e) {
           }
         }
         if (PRIZES.length === 0) {
+          // Пытаемся извлечь резервную копию призов из настроек Таблицы перед переходом на статический массив
+          const loadedBackupSettings = getSettings(ss);
+          if (loadedBackupSettings.prizes && loadedBackupSettings.prizes.length > 0) {
+            PRIZES = loadedBackupSettings.prizes.map(function(item) { return item.name; });
+          }
+        }
+        if (PRIZES.length === 0) {
           PRIZES = [
             "Смартфон Redmi Note 15 Pro Plus 5G 8/256",
             "Матрас туристический Youpin One Night Automatic Inflatable Leisure Bed PS1",
@@ -574,7 +650,8 @@ function doPost(e) {
         }
 
         let prizeIndex = -1;
-        for (let i = PRIZES.length; i >= 1; i--) {
+        // Очередность от 1 до N (первым делом разыгрывается Смартфон (1), потом Матрас (2), и т.д.)
+        for (let i = 1; i <= PRIZES.length; i++) {
           if (!usedPrizes.includes(i)) {
             prizeIndex = i;
             break;
@@ -585,7 +662,7 @@ function doPost(e) {
           return ContentService.createTextOutput(
             JSON.stringify({
               success: false,
-              message: "Все главные призы (10 мест) уже разыграны!",
+              message: "Все главные призы (" + PRIZES.length + " мест) уже разыграны!",
             }),
           ).setMimeType(ContentService.MimeType.JSON);
         }
@@ -616,11 +693,12 @@ function doPost(e) {
         );
 
         // Лист Победители: ФД (A), Имя (B), Телефон (C), Приз (D), Дата розыгрыша (E)
+        const drawnPrizeName = PRIZES[prizeIndex - 1] || "Главный приз";
         activeWinSheet.appendRow([
           "'" + winnerData[0], // ФД
           winnerData[3], // Имя
           "'" + winnerData[4], // Телефон
-          "'" + prizeIndex, // Приз
+          "'" + prizeIndex + "::" + drawnPrizeName, // Приз и название приза
           drawDate, // Дата розыгрыша
         ]);
 
@@ -636,6 +714,7 @@ function doPost(e) {
               name: winnerData[3],
               phone: winnerData[4],
               prize: prizeIndex,
+              prizeName: drawnPrizeName,
             },
           }),
         ).setMimeType(ContentService.MimeType.JSON);
@@ -931,11 +1010,30 @@ function doPost(e) {
       const githubOwner = p.getProperty("GITHUB_OWNER");
       const githubRepo = p.getProperty("GITHUB_REPO");
 
-      if (!githubToken || !githubOwner || !githubRepo) {
+      // 1. Атомарно сохраняем новые настройки в Script Properties и в Google Sheets (Двойной источник истины + Резервирование)
+      try {
+        p.setProperty("SITE_PRIZES", JSON.stringify(data.prizes));
+        p.setProperty("SITE_TITLE", data.title);
+        p.setProperty("SITE_SUBTITLE", data.subtitle);
+
+        saveSettingKey(ss, "sitePrizes", JSON.stringify(data.prizes));
+        saveSettingKey(ss, "heroTitle", data.title);
+        saveSettingKey(ss, "heroSubtitle", data.subtitle);
+      } catch (saveErr) {
         return ContentService.createTextOutput(
           JSON.stringify({
             success: false,
-            message: "В Script Properties на стороне Google Apps Script не настроены GITHUB_TOKEN, GITHUB_OWNER или GITHUB_REPO.",
+            message: "Критическая ошибка сохранения настроек в базу: " + saveErr.toString(),
+          }),
+        ).setMimeType(ContentService.MimeType.JSON);
+      }
+
+      if (!githubToken || !githubOwner || !githubRepo) {
+        return ContentService.createTextOutput(
+          JSON.stringify({
+            success: true,
+            warning: true,
+            message: "Настройки успешно сохранены в Таблице, но GitHub API настройки (GITHUB_TOKEN, GITHUB_OWNER, GITHUB_REPO) не заданы в Script Properties. Страница будет обновляться динамически.",
           }),
         ).setMimeType(ContentService.MimeType.JSON);
       }
@@ -955,8 +1053,9 @@ function doPost(e) {
         if (getResponse.getResponseCode() !== 200) {
           return ContentService.createTextOutput(
             JSON.stringify({
-              success: false,
-              message: "Не удалось получить index.html из GitHub репозитория (код: " + getResponse.getResponseCode() + ")",
+              success: true,
+              warning: true,
+              message: "Настройки успешно сохранены в Таблице, но не удалось получить index.html из GitHub репозитория (код: " + getResponse.getResponseCode() + "). Настройки сайта будут обновляться динамически через API.",
             }),
           ).setMimeType(ContentService.MimeType.JSON);
         }
@@ -974,23 +1073,30 @@ function doPost(e) {
             JSON.stringify({
               success: true,
               no_changes: true,
-              message: "Изменения отсутствуют",
+              message: "Настройки успешно сохранены в Таблице. Изменений для index.html на GitHub не найдено.",
             }),
           ).setMimeType(ContentService.MimeType.JSON);
         }
 
         // Обновляем index.html в репозитории через GitHub API
-        updateGitFile(
-          githubOwner,
-          githubRepo,
-          githubToken,
-          "index.html",
-          newHtmlContent,
-          "admin: update site settings (title, subtitle, prizes)"
-        );
-
-        // Синхронизируем список призов на стороне GAS для динамических розыгрышей
-        p.setProperty("SITE_PRIZES", JSON.stringify(data.prizes));
+        try {
+          updateGitFile(
+            githubOwner,
+            githubRepo,
+            githubToken,
+            "index.html",
+            newHtmlContent,
+            "admin: update site settings (title, subtitle, prizes)"
+          );
+        } catch (gitWriteErr) {
+          return ContentService.createTextOutput(
+            JSON.stringify({
+              success: true,
+              warning: true,
+              message: "Настройки успешно сохранены в Таблице, но произошла ошибка при записи файла index.html на GitHub API: " + gitWriteErr.toString() + ". Новые данные уже активны и будут подтягиваться динамически через API.",
+            }),
+          ).setMimeType(ContentService.MimeType.JSON);
+        }
 
         // Логируем действие администратора
         logAction("UPDATE_SITE_SETTINGS", "index.html", adminUser);
@@ -998,15 +1104,16 @@ function doPost(e) {
         return ContentService.createTextOutput(
           JSON.stringify({
             success: true,
-            message: "Настройки сохранены. Изменения отправлены в GitHub Pages и будут опубликованы через несколько минут.",
+            message: "Настройки успешно сохранены. Изменения отправлены в GitHub и будут опубликованы через несколько минут. Настройки уже применены для пользователей в реальном времени.",
           }),
         ).setMimeType(ContentService.MimeType.JSON);
 
       } catch (err) {
         return ContentService.createTextOutput(
           JSON.stringify({
-            success: false,
-            message: "Ошибка при обновлении настроек сайта: " + err.toString(),
+            success: true,
+            warning: true,
+            message: "Настройки сохранены в Таблице, но произошла ошибка при интеграции с GitHub: " + err.toString() + ". Новые данные будут подгружаться на сайт в реальном времени.",
           }),
         ).setMimeType(ContentService.MimeType.JSON);
       }
@@ -1145,33 +1252,122 @@ function replaceSiteSettings(htmlContent, title, subtitle, prizes) {
   const subtitleRegex = /<!-- HERO_SUBTITLE_START -->[\s\S]*?<!-- HERO_SUBTITLE_END -->/g;
   result = result.replace(subtitleRegex, "<!-- HERO_SUBTITLE_START -->" + safeSubtitle + "<!-- HERO_SUBTITLE_END -->");
   
-  for (let i = 0; i < prizes.length; i++) {
-    const p = prizes[i];
-    const prizeNum = p.idx;
-    const pStartMarker = "<!-- PRIZE_" + prizeNum + "_START -->";
-    const pEndMarker = "<!-- PRIZE_" + prizeNum + "_END -->";
+  // Проверяем наличие нового общего маркера для списка призов
+  if (result.indexOf("<!-- PRIZES_LIST_START -->") !== -1) {
+    let prizesListHtml = "<!-- PRIZES_LIST_START -->\n";
+    for (let i = 0; i < prizes.length; i++) {
+      const p = prizes[i];
+      const prizeNum = i + 1; // Автоматическая перенумерация
+      const safeLink = p.link.replace(/"/g, "&quot;");
+      const safeName = escapeHtmlGas(p.name);
+      
+      prizesListHtml += '            <!-- PRIZE_' + prizeNum + '_START -->\n' +
+        '            <a\n' +
+        '              href="' + safeLink + '"\n' +
+        '              target="_blank"\n' +
+        '              class="prize-card"\n' +
+        '            >\n' +
+        '              <div class="prize-rank">' + prizeNum + '</div>\n' +
+        '              <div class="prize-text">\n' +
+        '                ' + safeName + '\n' +
+        '              </div>\n' +
+        '            </a>\n' +
+        '            <!-- PRIZE_' + prizeNum + '_END -->\n';
+    }
+    prizesListHtml += "            <!-- PRIZES_LIST_END -->";
     
-    // Экранируем ссылку и название приза для безопасности
-    const safeLink = p.link.replace(/"/g, "&quot;");
-    const safeName = escapeHtmlGas(p.name);
-    
-    // Создаем экранированное регулярное выражение для этого приза
-    const pRegex = new RegExp(pStartMarker + "[\\s\\S]*?" + pEndMarker, "g");
-    const replacementHtml = pStartMarker + "\n" +
-      '            <a\n' +
-      '              href="' + safeLink + '"\n' +
-      '              target="_blank"\n' +
-      '              class="prize-card"\n' +
-      '            >\n' +
-      '              <div class="prize-rank">' + prizeNum + '</div>\n' +
-      '              <div class="prize-text">\n' +
-      '                ' + safeName + '\n' +
-      '              </div>\n' +
-      '            </a>\n' +
-      '            ' + pEndMarker;
-    
-    result = result.replace(pRegex, replacementHtml);
+    const listRegex = /<!-- PRIZES_LIST_START -->[\s\S]*?<!-- PRIZES_LIST_END -->/g;
+    result = result.replace(listRegex, prizesListHtml);
+  } else {
+    // Резервная/старая логика для обратной совместимости, если общий маркер не найден
+    for (let i = 0; i < prizes.length; i++) {
+      const p = prizes[i];
+      const prizeNum = p.idx;
+      const pStartMarker = "<!-- PRIZE_" + prizeNum + "_START -->";
+      const pEndMarker = "<!-- PRIZE_" + prizeNum + "_END -->";
+      
+      const safeLink = p.link.replace(/"/g, "&quot;");
+      const safeName = escapeHtmlGas(p.name);
+      
+      const pRegex = new RegExp(pStartMarker + "[\\s\\S]*?" + pEndMarker, "g");
+      const replacementHtml = pStartMarker + "\n" +
+        '            <a\n' +
+        '              href="' + safeLink + '"\n' +
+        '              target="_blank"\n' +
+        '              class="prize-card"\n' +
+        '            >\n' +
+        '              <div class="prize-rank">' + prizeNum + '</div>\n' +
+        '              <div class="prize-text">\n' +
+        '                ' + safeName + '\n' +
+        '              </div>\n' +
+        '            </a>\n' +
+        '            ' + pEndMarker;
+      
+      result = result.replace(pRegex, replacementHtml);
+    }
   }
   
   return result;
+}
+
+// Скрипт одноразовой миграции 
+// Запустите эту функцию вручную из редактора Google Apps Script, чтобы зафиксировать старые названия призов.
+function migrateOldWinners() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(SHEET_WINNERS);
+  if (!sheet) {
+    Logger.log("Лист Победители не найден.");
+    return;
+  }
+
+  const data = sheet.getDataRange().getValues();
+  if (data.length <= 1) {
+    Logger.log("Нет данных для миграции.");
+    return;
+  }
+
+  // Получаем текущие настройки и список призов, чтобы использовать их как исторический источник (пока их не поменяли)
+  const settings = getSettings(ss);
+  let PRIZES = [];
+  if (settings.prizes && settings.prizes.length > 0) {
+    PRIZES = settings.prizes.map(function(item) { return item.name; });
+  } else {
+    // Резервный старый список
+    PRIZES = [
+      "Смартфон Redmi Note 15 Pro Plus 5G 8/256",
+      "Матрас туристический Youpin One Night Automatic Inflatable Leisure Bed PS1",
+      "Видеорегистратор HOCO DV8 with rear camera",
+      "Наушники Baseus Bluetooth BH1 NC Black",
+      "Часы Xiaomi Redmi Watch 5 Active",
+      "Колонка Blackview Bluetooth Aurabass 3",
+      "Весы Xiaomi Mi Body Composition Scale S400",
+      "Наушники Redmi Buds 6 Play",
+      "Ночник Cute Panda",
+      "Наушники Xiaomi Headphones Basic",
+    ];
+  }
+
+  let migratedCount = 0;
+  for (let i = 1; i < data.length; i++) {
+    let rawPrize = String(data[i][3]).trim(); // Колонка D (индекс 3) - Приз
+    
+    // Если уже в новом формате, пропускаем
+    if (rawPrize.indexOf("::") !== -1) {
+      continue;
+    }
+
+    let parsed = parsePrize(rawPrize);
+    if (typeof parsed === "number" && !isNaN(parsed)) {
+      let prizeIndex = parsed;
+      if (prizeIndex >= 1 && prizeIndex <= PRIZES.length) {
+        let historicalName = PRIZES[prizeIndex - 1];
+        let newValue = "'" + prizeIndex + "::" + historicalName;
+        // Записываем обратно в ячейку D (индекс колонки = 4, строка = i + 1)
+        sheet.getRange(i + 1, 4).setValue(newValue);
+        migratedCount++;
+      }
+    }
+  }
+
+  Logger.log("Миграция завершена. Обновлено записей: " + migratedCount);
 }

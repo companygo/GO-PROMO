@@ -7,6 +7,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let config = {};
   let participants = []; // Локальная база для демо-режима
   let winners = []; // Локальные победители для демо-режима
+  let localPrizes = []; // Редактируемые призы во вкладке настроек
   let isAdmin = false;
   let adminToken = null; // Токен авторизации
   let currentWinnersCount = 0;
@@ -71,6 +72,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         config.winnersPublished =
           data.settings.winnersPublished === "true" ||
           data.settings.winnersPublished === true;
+        if (data.settings.prizes && data.settings.prizes.length > 0) {
+          config.prizes = data.settings.prizes;
+        }
+        if (data.settings.heroTitle) {
+          config.heroTitle = data.settings.heroTitle;
+        }
+        if (data.settings.heroSubtitle) {
+          config.heroSubtitle = data.settings.heroSubtitle;
+        }
       }
     } catch (err) {
       console.warn(
@@ -92,6 +102,25 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Загружаем динамические настройки из Google Sheets / LocalStorage
     await loadSettings();
+
+    // Обновляем заголовок и подзаголовок из динамических настроек, если они есть
+    if (config.heroTitle) {
+      const titleEl = document.getElementById("hero-title");
+      if (titleEl) {
+        titleEl.textContent = config.heroTitle;
+      }
+    }
+    if (config.heroSubtitle) {
+      const subtitleEl = document.getElementById("hero-prize-text");
+      if (subtitleEl) {
+        subtitleEl.textContent = config.heroSubtitle;
+      }
+    }
+
+    // Обновляем призы, если они получены динамически
+    if (config.prizes && config.prizes.length > 0) {
+      updateFrontEndPrizesUI(config.prizes);
+    }
 
     // Обновляем тексты и инициализируем календарь
     updateDynamicDateTexts();
@@ -628,7 +657,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     ];
   }
 
-  function resolvePrizeName(prizeValue) {
+  function resolvePrizeName(prizeValue, winnerObj) {
+    if (winnerObj && winnerObj.prizeName) {
+      return `${winnerObj.prize}. ${winnerObj.prizeName}`;
+    }
     if (!prizeValue) return "";
     const num = parseInt(prizeValue, 10);
     const prizesList = getDynamicPrizes();
@@ -762,7 +794,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                     <h4 style="margin-bottom: 8px; font-family: var(--font-heading); font-size: 1.25rem;">🎉 Победитель №${w.prize || idx + 1}</h4>
                     <div class="winner-name" style="font-size: 1.15rem; font-weight: 600; color: var(--primary, #06a658); margin-bottom: 10px; font-family: var(--font-heading);">${escapeHTML(w.name || "Участник")}</div>
                     <div class="receipt" style="font-family: monospace; font-size: 1.1rem; background: #121212; padding: 4px 10px; border-radius: 4px; color: var(--text-color); margin-bottom: 15px; display: inline-block; border: 1px solid var(--border-color);">${escapeHTML(receiptFull)}</div>
-                    ${w.prize ? `<div class="prize-info" style="color: var(--primary, #06a658); font-weight: bold; margin-top: 5px; font-size: 0.95rem;">${escapeHTML(resolvePrizeName(w.prize))}</div>` : ""}
+                    ${w.prize ? `<div class="prize-info" style="color: var(--primary, #06a658); font-weight: bold; margin-top: 5px; font-size: 0.95rem;">${escapeHTML(resolvePrizeName(w.prize, w))}</div>` : ""}
                     ${isAdmin ? `<div class="date" style="margin-top: 12px; font-size: 0.8rem; opacity: 0.7;"><small>Дата розыгрыша: ${escapeHTML(formatDate(w.date))}</small></div>` : ""}
                 `;
         list.appendChild(card);
@@ -974,7 +1006,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (isWinner) {
         if (found && found.prize) {
           prizeIndexFormatted = found.prize;
-          const resolved = resolvePrizeName(found.prize);
+          const resolved = resolvePrizeName(found.prize, found);
           prizeStr = resolved;
         } else {
           // Если участник помечен как победитель, но в таблице "Победители" его нет (или данные рассинхронизированы)
@@ -1455,7 +1487,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       msg.textContent = "";
 
       function showWinnerMessage(winner) {
-        msg.innerHTML = `🎉 Победитель выбран!<br><strong style="font-size:1.2rem">${escapeHTML(winner.name)} (Чек: ${escapeHTML(winner.receipt)})</strong><br>Телефон: ${escapeHTML(winner.phone)}<br><div style="margin-top: 5px; color: var(--primary); font-weight: bold;">${escapeHTML(resolvePrizeName(winner.prize) || "Главный приз")}</div>`;
+        msg.innerHTML = `🎉 Победитель выбран!<br><strong style="font-size:1.2rem">${escapeHTML(winner.name)} (Чек: ${escapeHTML(winner.receipt)})</strong><br>Телефон: ${escapeHTML(winner.phone)}<br><div style="margin-top: 5px; color: var(--primary); font-weight: bold;">${escapeHTML(resolvePrizeName(winner.prize, winner) || "Главный приз")}</div>`;
         msg.className = "message success";
         msg.style.opacity = "1";
         msg.style.transition = "";
@@ -1636,6 +1668,102 @@ document.addEventListener("DOMContentLoaded", async () => {
   const settingsTabContent = document.getElementById("settingsTabContent");
   const siteSettingsTabContent = document.getElementById("siteSettingsTabContent");
 
+  function saveCurrentInputsToLocal() {
+    const nameInputs = document.querySelectorAll(".admin-prize-name");
+    const linkInputs = document.querySelectorAll(".admin-prize-link");
+    localPrizes = [];
+    nameInputs.forEach((input, i) => {
+      const idx = i + 1;
+      const name = input.value.trim();
+      const link = linkInputs[i] ? linkInputs[i].value.trim() : "";
+      localPrizes.push({ idx, name, link });
+    });
+  }
+
+  function renderAdminPrizes() {
+    const container = document.getElementById("adminPrizesList");
+    if (!container) return;
+
+    container.innerHTML = "";
+
+    const usedPrizes = winners.map((w) => parseInt(w.prize, 10));
+    const highestDrawnPrize = usedPrizes.length > 0 ? Math.max(...usedPrizes) : 0;
+
+    localPrizes.forEach((p, i) => {
+      const idx = i + 1;
+      const isDeleteAllowed = idx > highestDrawnPrize;
+
+      const itemDiv = document.createElement("div");
+      itemDiv.className = "admin-prize-row";
+      itemDiv.style.cssText = "display: grid; grid-template-columns: 40px 1fr 1fr auto; gap: 15px; align-items: center; background: #0a0a0a; padding: 15px; border-radius: var(--radius); border: 1px solid #222; margin-bottom: 10px;";
+
+      itemDiv.innerHTML = `
+        <div style="font-weight: bold; font-size: 1.2rem; color: var(--primary); text-align: center;">${idx}</div>
+        <div>
+          <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Название приза</label>
+          <input type="text" class="admin-prize-name" data-index="${idx}" value="${escapeHTML(p.name)}" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius); background:#121212; color:#fff;" />
+        </div>
+        <div>
+          <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Ссылка на приз</label>
+          <input type="text" class="admin-prize-link" data-index="${idx}" value="${escapeHTML(p.link)}" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius); background:#121212; color:#fff;" />
+        </div>
+        <div style="text-align: center;">
+          <button type="button" class="delete-prize-btn btn" data-index="${i}" 
+                  ${isDeleteAllowed ? "" : "disabled style='opacity: 0.4; cursor: not-allowed; background: #555;'"}
+                  style="margin-top: 18px; padding: 8px 12px; background: #cf6679; color: #fff; border: none; border-radius: var(--radius); cursor: pointer;"
+                  title="${isDeleteAllowed ? "Удалить приз" : "Этот приз или приз с большим номером уже разыгран"}">
+            🗑
+          </button>
+        </div>
+      `;
+      container.appendChild(itemDiv);
+    });
+
+    const addBtnContainer = document.createElement("div");
+    addBtnContainer.style.cssText = "text-align: left; margin-top: 15px;";
+    addBtnContainer.innerHTML = `
+      <button id="addPrizeBtn" type="button" class="btn" style="background-color: var(--primary); color: white; border: none; padding: 10px 20px; border-radius: var(--radius); cursor: pointer; font-weight: bold; font-family: var(--font-heading);">
+        ➕ Добавить приз
+      </button>
+    `;
+    container.appendChild(addBtnContainer);
+
+    document.getElementById("addPrizeBtn").addEventListener("click", () => {
+      saveCurrentInputsToLocal();
+      localPrizes.push({
+        idx: localPrizes.length + 1,
+        name: "",
+        link: "https://go-go.md/"
+      });
+      renderAdminPrizes();
+    });
+
+    const deleteBtns = container.querySelectorAll(".delete-prize-btn");
+    deleteBtns.forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        saveCurrentInputsToLocal();
+        const deleteIndex = parseInt(btn.getAttribute("data-index"), 10);
+        const prizeIdx = deleteIndex + 1;
+
+        if (prizeIdx <= highestDrawnPrize) {
+          const msg = document.getElementById("siteSettingsMessage");
+          if (msg) {
+            msg.textContent = "Ошибка: этот приз или приз с большим номером уже разыгран!";
+            msg.className = "message error";
+          }
+          return;
+        }
+
+        localPrizes.splice(deleteIndex, 1);
+        localPrizes.forEach((item, k) => {
+          item.idx = k + 1;
+        });
+
+        renderAdminPrizes();
+      });
+    });
+  }
+
   function fillSiteSettingsInputs() {
     const titleInput = document.getElementById("adminSiteTitle");
     const subtitleInput = document.getElementById("adminSiteSubtitle");
@@ -1650,30 +1778,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       subtitleInput.value = heroSubTitleNode ? heroSubTitleNode.textContent.trim().replace(/\s+/g, " ") : "";
     }
 
-    const container = document.getElementById("adminPrizesList");
-    if (container) {
-      container.innerHTML = "";
-      const cards = document.querySelectorAll(".prizes-grid .prize-card");
-      cards.forEach((card, i) => {
-        const link = card.getAttribute("href") || "";
-        const name = card.querySelector(".prize-text").textContent.trim().replace(/\s+/g, " ");
-        
-        const itemDiv = document.createElement("div");
-        itemDiv.style.cssText = "display: grid; grid-template-columns: 50px 1fr 1fr; gap: 15px; align-items: center; background: #0a0a0a; padding: 15px; border-radius: var(--radius); border: 1px solid #222;";
-        itemDiv.innerHTML = `
-          <div style="font-weight: bold; font-size: 1.2rem; color: var(--primary); text-align: center;">${i + 1}</div>
-          <div>
-            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Название приза</label>
-            <input type="text" class="admin-prize-name" data-index="${i + 1}" value="${escapeHTML(name)}" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius); background:#121212; color:#fff;" />
-          </div>
-          <div>
-            <label style="display:block; font-size:0.85rem; color:var(--text-muted); margin-bottom:5px;">Ссылка на приз</label>
-            <input type="text" class="admin-prize-link" data-index="${i + 1}" value="${escapeHTML(link)}" style="width:100%; padding:8px 10px; border:1px solid var(--border-color); border-radius:var(--radius); background:#121212; color:#fff;" />
-          </div>
-        `;
-        container.appendChild(itemDiv);
-      });
-    }
+    const cards = document.querySelectorAll(".prizes-grid .prize-card");
+    localPrizes = Array.from(cards).map((card, i) => {
+      return {
+        idx: i + 1,
+        name: card.querySelector(".prize-text").textContent.trim().replace(/\s+/g, " "),
+        link: card.getAttribute("href") || ""
+      };
+    });
+
+    renderAdminPrizes();
   }
 
   function fillSettingsInputs() {
@@ -1944,6 +2058,34 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  function updateFrontEndPrizesUI(prizes) {
+    const grid = document.querySelector(".prizes-grid");
+    if (!grid) return;
+    
+    // Перестраиваем сетку призов динамически с автоматической нумерацией
+    grid.innerHTML = `<!-- PRIZES_LIST_START -->\n` + 
+      prizes.map((p, i) => {
+        const prizeNum = i + 1;
+        const safeLink = p.link.replace(/"/g, "&quot;");
+        const safeName = escapeHTML(p.name);
+        return `
+            <!-- PRIZE_${prizeNum}_START -->
+            <a
+              href="${safeLink}"
+              target="_blank"
+              class="prize-card"
+            >
+              <div class="prize-rank">${prizeNum}</div>
+              <div class="prize-text">
+                ${safeName}
+              </div>
+            </a>
+            <!-- PRIZE_${prizeNum}_END -->
+        `;
+      }).join("\n") +
+      `\n<!-- PRIZES_LIST_END -->`;
+  }
+
   // Сохранение настроек сайта через GitHub API
   const saveSiteSettingsBtn = document.getElementById("saveSiteSettingsBtn");
   if (saveSiteSettingsBtn) {
@@ -1962,13 +2104,13 @@ document.addEventListener("DOMContentLoaded", async () => {
       const nameInputs = document.querySelectorAll(".admin-prize-name");
       const linkInputs = document.querySelectorAll(".admin-prize-link");
 
-      if (nameInputs.length !== 10 || linkInputs.length !== 10) {
-        msg.textContent = "Ошибка: не все поля призов заполнены (требуется ровно 10 призов).";
+      if (nameInputs.length === 0 || nameInputs.length !== linkInputs.length) {
+        msg.textContent = "Ошибка: не все поля призов заполнены корректно.";
         msg.className = "message error";
         return;
       }
 
-      for (let i = 0; i < 10; i++) {
+      for (let i = 0; i < nameInputs.length; i++) {
         const nameVal = nameInputs[i].value.trim();
         const linkVal = linkInputs[i].value.trim();
         if (!nameVal || !linkVal) {
@@ -2004,13 +2146,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       let hasChanges = (titleVal !== curTitle || subtitleVal !== curSubtitle);
       const currentCards = document.querySelectorAll(".prizes-grid .prize-card");
-      currentCards.forEach((card, i) => {
-        const curLink = card.getAttribute("href") || "";
-        const curName = card.querySelector(".prize-text").textContent.trim().replace(/\s+/g, " ");
-        if (newPrizes[i].name !== curName || newPrizes[i].link !== curLink) {
-          hasChanges = true;
-        }
-      });
+      if (newPrizes.length !== currentCards.length) {
+        hasChanges = true;
+      } else {
+        currentCards.forEach((card, i) => {
+          const curLink = card.getAttribute("href") || "";
+          const curName = card.querySelector(".prize-text").textContent.trim().replace(/\s+/g, " ");
+          if (newPrizes[i].name !== curName || newPrizes[i].link !== curLink) {
+            hasChanges = true;
+          }
+        });
+      }
 
       if (!hasChanges) {
         msg.textContent = "Изменения отсутствуют";
@@ -2038,14 +2184,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             subtitleEl.textContent = subtitleVal;
           }
 
-          const currentCards = document.querySelectorAll(".prizes-grid .prize-card");
-          currentCards.forEach((card, i) => {
-            card.setAttribute("href", newPrizes[i].link);
-            const textDiv = card.querySelector(".prize-text");
-            if (textDiv) {
-              textDiv.textContent = newPrizes[i].name;
-            }
-          });
+          updateFrontEndPrizesUI(newPrizes);
 
           msg.textContent = "Настройки сайта успешно сохранены (демо-режим).";
           msg.className = "message success";
@@ -2082,14 +2221,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                 subtitleEl.textContent = subtitleVal;
               }
 
-              const currentCards = document.querySelectorAll(".prizes-grid .prize-card");
-              currentCards.forEach((card, i) => {
-                card.setAttribute("href", newPrizes[i].link);
-                const textDiv = card.querySelector(".prize-text");
-                if (textDiv) {
-                  textDiv.textContent = newPrizes[i].name;
-                }
-              });
+              updateFrontEndPrizesUI(newPrizes);
 
               msg.textContent = json.message || "Настройки сохранены. Изменения отправлены в GitHub Pages и будут опубликованы через несколько минут.";
               msg.className = "message success";
