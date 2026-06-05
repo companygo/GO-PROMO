@@ -52,7 +52,7 @@
               text-transform: uppercase;
             "
           >
-            <!-- HERO_SUBTITLE_START -->Выиграй главный приз — смартфон Xiaomi !<!-- HERO_SUBTITLE_END -->
+            <!-- HERO_SUBTITLE_START -->Выиграй главный приз — смартфон Xiaomi!<!-- HERO_SUBTITLE_END -->
           </p>
 
           <!-- Отсчет до розыгрыша -->
@@ -1082,6 +1082,37 @@
               <code>config.json</code> (В поле <code>googleScriptUrl</code>).
             </li>
           </ol>
+        </div>
+      </div>
+    </div>
+
+    <!-- Кастомная iOS-крутилка для выбора времени (только для iOS устройств) -->
+    <div id="iosTimePickerOverlay" class="ios-time-picker-overlay">
+      <div class="ios-time-picker-container" id="iosTimePickerContainer">
+        <div class="ios-time-picker-header">
+          <button type="button" class="ios-time-picker-btn ios-time-picker-btn-cancel" id="iosTimePickerCancel">Отмена</button>
+          <span class="ios-time-picker-title">Время чека</span>
+          <button type="button" class="ios-time-picker-btn ios-time-picker-btn-done" id="iosTimePickerDone">Готово</button>
+        </div>
+        <div class="ios-time-picker-body">
+          <div class="ios-time-picker-shading"></div>
+          <div class="ios-time-picker-selection-highlight"></div>
+          
+          <!-- Часы -->
+          <div class="ios-time-picker-wheel" id="iosPickerWheelHours"></div>
+          
+          <!-- Минуты -->
+          <div class="ios-time-picker-wheel" id="iosPickerWheelMinutes"></div>
+          
+          <!-- Секунды -->
+          <div class="ios-time-picker-wheel" id="iosPickerWheelSeconds"></div>
+
+          <!-- Названия колонок (чтобы пользователю было понятно) -->
+          <div class="ios-time-picker-labels">
+            <div class="ios-time-picker-label">ч</div>
+            <div class="ios-time-picker-label">м</div>
+            <div class="ios-time-picker-label">с</div>
+          </div>
         </div>
       </div>
     </div>
